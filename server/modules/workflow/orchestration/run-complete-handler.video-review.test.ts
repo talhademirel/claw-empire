@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import { createRunCompleteHandler } from "./run-complete-handler.ts";
@@ -47,7 +50,7 @@ function createDb(): DatabaseSync {
   return db;
 }
 
-function createDeps(db: DatabaseSync) {
+function createDeps(db: DatabaseSync, logsDir = "/tmp") {
   return {
     activeProcesses: new Map<string, unknown>(),
     stopProgressTimer: vi.fn(),
@@ -58,7 +61,7 @@ function createDeps(db: DatabaseSync) {
     clearTaskWorkflowState: vi.fn(),
     codexThreadToSubtask: new Map<string, string>(),
     nowMs: () => 1700000000000,
-    logsDir: "/tmp",
+    logsDir,
     broadcast: vi.fn(),
     processSubtaskDelegations: vi.fn(),
     taskWorktrees: new Map<string, { worktreePath?: string; projectPath?: string; branchName?: string }>(),
@@ -180,6 +183,61 @@ describe("run complete handler - video preprod review transition", () => {
       expect(loggedMessages.some((message: string) => message.includes("Video artifact"))).toBe(false);
       expect(loggedMessages.some((message: string) => message.includes("Video sequencing notice"))).toBe(false);
     } finally {
+      db.close();
+    }
+  });
+
+  it("[VIDEO_FINAL_RENDER]는 Remotion 증빙이 없으면 성공 종료여도 실패 처리한다", () => {
+    const db = createDb();
+    const logsDir = fs.mkdtempSync(path.join(os.tmpdir(), "climpire-run-complete-"));
+    try {
+      const taskId = "task-final-render";
+      db.prepare(
+        `
+          INSERT INTO tasks (
+            id, title, description, status, workflow_pack_key, source_task_id, assigned_agent_id, department_id, project_id, project_path, updated_at
+          )
+          VALUES (?, ?, ?, 'in_progress', 'video_preprod', 'parent-task', ?, 'dev', 'project-1', ?, 1)
+        `,
+      ).run(
+        taskId,
+        "[VIDEO_FINAL_RENDER] 최종 영상 렌더링",
+        "최종 렌더링",
+        "video-preprod-seed-2",
+        "/tmp/project",
+      );
+      db.prepare(
+        `
+          INSERT INTO agents (id, name, name_ko, status, current_task_id, department_id, stats_tasks_done, stats_xp)
+          VALUES ('video-preprod-seed-2', 'Liam', '리암', 'working', ?, 'dev', 0, 0)
+        `,
+      ).run(taskId);
+      fs.writeFileSync(path.join(logsDir, `${taskId}.log`), "moviepy 2.1.2 is available", "utf8");
+
+      const deps = createDeps(db, logsDir);
+      deps.activeProcesses.set(taskId, { pid: 103 });
+      const { handleTaskRunComplete } = createRunCompleteHandler(deps);
+
+      handleTaskRunComplete(taskId, 0);
+
+      const updated = db.prepare("SELECT status FROM tasks WHERE id = ?").get(taskId) as { status: string };
+      expect(updated.status).toBe("inbox");
+      expect(deps.appendTaskLog).toHaveBeenCalledWith(
+        taskId,
+        "system",
+        expect.stringContaining("Video render engine gate failed"),
+      );
+      expect(
+        deps.appendTaskLog.mock.calls.some(
+          (call: any[]) => String(call[2] ?? "").includes("RUN failed (exit code: 86)"),
+        ),
+      ).toBe(true);
+    } finally {
+      try {
+        fs.rmSync(logsDir, { recursive: true, force: true });
+      } catch {
+        // best effort cleanup
+      }
       db.close();
     }
   });

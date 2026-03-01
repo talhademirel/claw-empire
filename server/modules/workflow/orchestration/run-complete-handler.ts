@@ -4,6 +4,7 @@ import {
   resolveVideoArtifactRelativeCandidates,
   resolveVideoArtifactSpecForTask,
 } from "../packs/video-artifact.ts";
+import { evaluateRemotionOnlyGateFromLogFiles } from "../packs/video-render-engine-gate.ts";
 
 type CreateRunCompleteHandlerDeps = Record<string, any>;
 
@@ -97,13 +98,9 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
       if (row) codexThreadToSubtask.delete(tid);
     }
 
-    const t = nowMs();
-    const logKind = exitCode === 0 ? "completed" : "failed";
-
-    appendTaskLog(taskId, "system", `RUN ${logKind} (exit code: ${exitCode})`);
-
-    // Read log file for result
     const logPath = path.join(logsDir, `${taskId}.log`);
+    const t = nowMs();
+    let finalExitCode = exitCode;
     let result: string | null = null;
     try {
       if (fs.existsSync(logPath)) {
@@ -113,13 +110,37 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
     } catch {
       /* ignore */
     }
+    if (
+      finalExitCode === 0 &&
+      task.workflow_pack_key === "video_preprod" &&
+      /\[VIDEO_FINAL_RENDER\]/i.test(task.title)
+    ) {
+      const remotionGate = evaluateRemotionOnlyGateFromLogFiles({ logsDir, taskIds: [taskId] });
+      if (!remotionGate.passed) {
+        finalExitCode = 86;
+        appendTaskLog(
+          taskId,
+          "system",
+          `Video render engine gate failed: Remotion evidence required for [VIDEO_FINAL_RENDER]. checked_tasks=${remotionGate.checkedTaskIds.join(", ") || taskId}, remotion_tasks=${remotionGate.remotionEvidenceTaskIds.join(", ") || "none"}, forbidden_tasks=${remotionGate.forbiddenEngineTaskIds.join(", ") || "none"}`,
+        );
+      } else {
+        appendTaskLog(
+          taskId,
+          "system",
+          `Video render engine gate passed: Remotion evidence detected (${remotionGate.remotionEvidenceTaskIds.join(", ")})`,
+        );
+      }
+    }
+
+    const logKind = finalExitCode === 0 ? "completed" : "failed";
+    appendTaskLog(taskId, "system", `RUN ${logKind} (exit code: ${finalExitCode})`);
 
     if (result) {
       db.prepare("UPDATE tasks SET result = ? WHERE id = ?").run(result, taskId);
     }
 
     // Auto-complete own-department subtasks on CLI success; foreign ones get delegated
-    if (exitCode === 0) {
+    if (finalExitCode === 0) {
       const pendingSubtasks = db
         .prepare("SELECT id, target_department_id FROM subtasks WHERE task_id = ? AND status NOT IN ('done', 'cancelled')")
         .all(taskId) as Array<{ id: string; target_department_id: string | null }>;
@@ -142,7 +163,7 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
     if (task?.assigned_agent_id) {
       db.prepare("UPDATE agents SET status = 'idle', current_task_id = NULL WHERE id = ?").run(task.assigned_agent_id);
 
-      if (exitCode === 0) {
+      if (finalExitCode === 0) {
         db.prepare(
           "UPDATE agents SET stats_tasks_done = stats_tasks_done + 1, stats_xp = stats_xp + 10 WHERE id = ?",
         ).run(task.assigned_agent_id);
@@ -154,7 +175,7 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
       broadcast("agent_status", agent);
     }
 
-    if (exitCode === 0 && task) {
+    if (finalExitCode === 0 && task) {
       let videoArtifactReady = true;
       if (task.workflow_pack_key === "video_preprod" && !task.source_task_id) {
         const openSubtasksRow = db
@@ -387,7 +408,7 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
       }
     }
 
-    if (exitCode === 0) {
+    if (finalExitCode === 0) {
       // ── SUCCESS: Move to 'review' for team leader check ──
       db.prepare("UPDATE tasks SET status = 'review', updated_at = ? WHERE id = ?").run(t, taskId);
 
@@ -557,7 +578,7 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
       db.prepare("UPDATE tasks SET status = 'inbox', updated_at = ? WHERE id = ?").run(t, taskId);
 
       if (task?.source_task_id) {
-        reconcileDelegatedSubtasksAfterRun(taskId, exitCode);
+        reconcileDelegatedSubtasksAfterRun(taskId, finalExitCode);
       }
 
       const updatedTask = db.prepare("SELECT * FROM tasks WHERE id = ?").get(taskId);
@@ -592,16 +613,16 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
               ? pickL(
                   l(
                     [
-                      `대표님, '${task.title}' 작업에 문제가 발생했습니다 (종료코드: ${exitCode}).\n\n❌ 오류 내용:\n${errorBody}\n\n재배정하거나 업무 내용을 수정한 후 다시 시도해주세요.`,
+                      `대표님, '${task.title}' 작업에 문제가 발생했습니다 (종료코드: ${finalExitCode}).\n\n❌ 오류 내용:\n${errorBody}\n\n재배정하거나 업무 내용을 수정한 후 다시 시도해주세요.`,
                     ],
                     [
-                      `CEO, '${task.title}' failed with an issue (exit code: ${exitCode}).\n\n❌ Error:\n${errorBody}\n\nPlease reassign the agent or revise the task, then try again.`,
+                      `CEO, '${task.title}' failed with an issue (exit code: ${finalExitCode}).\n\n❌ Error:\n${errorBody}\n\nPlease reassign the agent or revise the task, then try again.`,
                     ],
                     [
-                      `CEO、'${task.title}' の処理中に問題が発生しました (終了コード: ${exitCode})。\n\n❌ エラー内容:\n${errorBody}\n\n担当再割り当てまたはタスク内容を修正して再試行してください。`,
+                      `CEO、'${task.title}' の処理中に問題が発生しました (終了コード: ${finalExitCode})。\n\n❌ エラー内容:\n${errorBody}\n\n担当再割り当てまたはタスク内容を修正して再試行してください。`,
                     ],
                     [
-                      `CEO，'${task.title}' 执行时发生问题（退出码：${exitCode}）。\n\n❌ 错误内容:\n${errorBody}\n\n请重新分配代理或修改任务后重试。`,
+                      `CEO，'${task.title}' 执行时发生问题（退出码：${finalExitCode}）。\n\n❌ 错误内容:\n${errorBody}\n\n请重新分配代理或修改任务后重试。`,
                     ],
                   ),
                   failLang,
@@ -609,15 +630,15 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
               : pickL(
                   l(
                     [
-                      `대표님, '${task.title}' 작업에 문제가 발생했습니다 (종료코드: ${exitCode}). 에이전트를 재배정하거나 업무 내용을 수정한 후 다시 시도해주세요.`,
+                      `대표님, '${task.title}' 작업에 문제가 발생했습니다 (종료코드: ${finalExitCode}). 에이전트를 재배정하거나 업무 내용을 수정한 후 다시 시도해주세요.`,
                     ],
                     [
-                      `CEO, '${task.title}' failed with an issue (exit code: ${exitCode}). Please reassign the agent or revise the task, then try again.`,
+                      `CEO, '${task.title}' failed with an issue (exit code: ${finalExitCode}). Please reassign the agent or revise the task, then try again.`,
                     ],
                     [
-                      `CEO、'${task.title}' の処理中に問題が発生しました (終了コード: ${exitCode})。担当再割り当てまたはタスク内容を修正して再試行してください。`,
+                      `CEO、'${task.title}' の処理中に問題が発生しました (終了コード: ${finalExitCode})。担当再割り当てまたはタスク内容を修正して再試行してください。`,
                     ],
-                    [`CEO，'${task.title}' 执行时发生问题（退出码：${exitCode}）。请重新分配代理或修改任务后重试。`],
+                    [`CEO，'${task.title}' 执行时发生问题（退出码：${finalExitCode}）。请重新分配代理或修改任务后重试。`],
                   ),
                   failLang,
                 );
@@ -629,10 +650,10 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
         notifyCeo(
           pickL(
             l(
-              [`'${task.title}' 작업 실패 (exit code: ${exitCode}).`],
-              [`Task '${task.title}' failed (exit code: ${exitCode}).`],
-              [`'${task.title}' のタスクが失敗しました (exit code: ${exitCode})。`],
-              [`任务 '${task.title}' 失败（exit code: ${exitCode}）。`],
+              [`'${task.title}' 작업 실패 (exit code: ${finalExitCode}).`],
+              [`Task '${task.title}' failed (exit code: ${finalExitCode}).`],
+              [`'${task.title}' のタスクが失敗しました (exit code: ${finalExitCode})。`],
+              [`任务 '${task.title}' 失败（exit code: ${finalExitCode}）。`],
             ),
             failLang,
           ),

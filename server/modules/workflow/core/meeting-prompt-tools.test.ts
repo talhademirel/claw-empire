@@ -75,7 +75,7 @@ describe("buildMeetingPrompt", () => {
       localeInstruction: () => "한국어로 응답하세요.",
       resolveLang: () => "ko",
     });
-    tools.buildMeetingPrompt(createAgent({ department_id: "dev", role: "team_leader" }), {
+    const prompt = tools.buildMeetingPrompt(createAgent({ department_id: "dev", role: "team_leader" }), {
       meetingType: "planned",
       round: 1,
       taskTitle: "영상 제작",
@@ -86,5 +86,6 @@ describe("buildMeetingPrompt", () => {
       lang: "ko",
     });
     expect(getDeptName).toHaveBeenCalledWith("dev", "video_preprod");
+    expect(prompt).toContain("Remotion");
   });
 });

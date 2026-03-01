@@ -4,6 +4,7 @@ import {
   resolveVideoArtifactRelativeCandidates,
   resolveVideoArtifactSpecForTask,
 } from "../packs/video-artifact.ts";
+import { evaluateRemotionOnlyGateFromLogFiles } from "../packs/video-render-engine-gate.ts";
 import { reconcileVideoRenderDelegationState } from "./video-render-delegation-state.ts";
 
 type CreateReviewFinalizeToolsDeps = Record<string, any>;
@@ -12,6 +13,7 @@ export function createReviewFinalizeTools(deps: CreateReviewFinalizeToolsDeps) {
   const {
     db,
     nowMs,
+    logsDir,
     broadcast,
     appendTaskLog,
     getPreferredLanguage,
@@ -392,6 +394,85 @@ export function createReviewFinalizeTools(deps: CreateReviewFinalizeToolsDeps) {
         taskId,
         "system",
         `Review gate: video artifact verified for approval (${verifiedPath}, ${verifiedSize} bytes)`,
+      );
+
+      const remotionEvidenceTaskIds = new Set<string>([taskId]);
+      try {
+        const renderDelegatedRows = db
+          .prepare(
+            `
+              SELECT delegated_task_id
+              FROM subtasks
+              WHERE task_id = ?
+                AND title LIKE '%[VIDEO_FINAL_RENDER]%'
+                AND delegated_task_id IS NOT NULL
+                AND TRIM(delegated_task_id) != ''
+            `,
+          )
+          .all(taskId) as Array<{ delegated_task_id: string | null }>;
+        for (const row of renderDelegatedRows) {
+          const id = String(row?.delegated_task_id ?? "").trim();
+          if (id) remotionEvidenceTaskIds.add(id);
+        }
+      } catch {
+        // best effort
+      }
+      try {
+        const childRows = db
+          .prepare(
+            `
+              SELECT id
+              FROM tasks
+              WHERE source_task_id = ?
+                AND status IN ('in_progress', 'review', 'done')
+            `,
+          )
+          .all(taskId) as Array<{ id: string }>;
+        for (const row of childRows) {
+          const id = String(row?.id ?? "").trim();
+          if (id) remotionEvidenceTaskIds.add(id);
+        }
+      } catch {
+        // best effort
+      }
+
+      const remotionGate = evaluateRemotionOnlyGateFromLogFiles({
+        logsDir: String(logsDir ?? process.cwd()),
+        taskIds: [...remotionEvidenceTaskIds],
+      });
+      if (!remotionGate.passed) {
+        appendTaskLog(
+          taskId,
+          "system",
+          `Review hold: video artifact gate blocked approval (remotion evidence missing/invalid). checked_tasks=${remotionGate.checkedTaskIds.join(", ")}, remotion_tasks=${remotionGate.remotionEvidenceTaskIds.join(", ") || "none"}, forbidden_tasks=${remotionGate.forbiddenEngineTaskIds.join(", ") || "none"}`,
+        );
+        notifyCeo(
+          pickL(
+            l(
+              [
+                `'${taskTitle}' 는 Remotion 렌더 실행 증빙이 확인되지 않아 승인/머지가 보류되었습니다. [VIDEO_FINAL_RENDER]는 Remotion으로 다시 렌더 후 승인해 주세요.`,
+              ],
+              [
+                `'${taskTitle}' approval/merge is on hold because Remotion render evidence was not verified. Re-render [VIDEO_FINAL_RENDER] with Remotion, then approve again.`,
+              ],
+              [
+                `'${taskTitle}' は Remotion レンダー実行の証跡が確認できないため承認/マージを保留しました。[VIDEO_FINAL_RENDER] を Remotion で再レンダー後に再承認してください。`,
+              ],
+              [
+                `'${taskTitle}' 因未验证到 Remotion 渲染证据，审批/合并已暂停。请使用 Remotion 重新渲染 [VIDEO_FINAL_RENDER] 后再审批。`,
+              ],
+            ),
+            lang,
+          ),
+          taskId,
+        );
+        return;
+      }
+
+      appendTaskLog(
+        taskId,
+        "system",
+        `Review gate: remotion runtime evidence verified (${remotionGate.remotionEvidenceTaskIds.join(", ")})`,
       );
     }
 

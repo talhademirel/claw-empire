@@ -292,6 +292,7 @@ export function createSubtaskSeedingTools(deps: SubtaskSeedingDeps) {
           "[VIDEO_FINAL_RENDER]",
           `상위 업무: ${task.title}`,
           "모든 문서/협업 산출물을 취합해 최종 소개 영상을 1회 렌더링하세요.",
+          "최종 렌더링 엔진은 반드시 Remotion만 사용하세요. Python(moviepy/Pillow) 기반 렌더링은 금지됩니다.",
           "산출물 경로 규칙(project_department_final.mp4)을 지키고, 결과 파일 경로/용량 검증을 보고하세요.",
           "",
           "[QUALITY]",

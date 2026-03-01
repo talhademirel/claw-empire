@@ -183,6 +183,7 @@ export function createSubtaskDelegationPromptBuilder(deps: PromptDeps) {
               [
                 "[Video Runtime Rules]",
                 "- 렌더링 엔진은 반드시 Remotion을 사용하세요. ffmpeg 단독 합성/다른 생성기로 대체 금지.",
+                "- Python(moviepy/Pillow) 기반 렌더링은 금지됩니다.",
                 "- `remotion-dev/skills#remotion-best-practices` 스킬은 시스템이 자동 설치/학습 처리합니다.",
                 "- 산출물은 mp4 파일로 렌더링하고 파일 경로/용량 검증을 결과에 포함하세요.",
                 "- 화면 텍스트는 반드시 정제하세요: `\\n`/`\\t`/백틱/마크다운 기호를 문자 그대로 노출 금지.",
@@ -190,6 +191,7 @@ export function createSubtaskDelegationPromptBuilder(deps: PromptDeps) {
               [
                 "[Video Runtime Rules]",
                 "- Rendering engine must be Remotion. Do not replace it with ffmpeg-only stitching or other generators.",
+                "- Python renderers (moviepy/Pillow) are forbidden.",
                 "- `remotion-dev/skills#remotion-best-practices` is auto-installed/recorded by the system when missing.",
                 "- Render a real mp4 artifact and include path/size verification in the result.",
                 "- Sanitize all on-screen copy: never render raw `\\n`/`\\t`, backticks, or markdown symbols literally.",
@@ -197,6 +199,7 @@ export function createSubtaskDelegationPromptBuilder(deps: PromptDeps) {
               [
                 "[Video Runtime Rules]",
                 "- レンダリングエンジンは必ず Remotion を使用し、ffmpeg単体合成や他生成器へ置換しないでください。",
+                "- Python（moviepy/Pillow）系レンダリングは使用禁止です。",
                 "- `remotion-dev/skills#remotion-best-practices` が未導入ならシステムが自動インストール/学習記録します。",
                 "- 実際の mp4 成果物を生成し、パス/サイズ検証を結果に含めてください。",
                 "- 画面テキストは正規化し、`\\n`/`\\t`/バッククォート/Markdown記号の生表示を禁止します。",
@@ -204,6 +207,7 @@ export function createSubtaskDelegationPromptBuilder(deps: PromptDeps) {
               [
                 "[Video Runtime Rules]",
                 "- 渲染引擎必须使用 Remotion，不得替换为仅 ffmpeg 拼接或其他生成器。",
+                "- 禁止使用 Python（moviepy/Pillow）渲染方案。",
                 "- 若缺少 `remotion-dev/skills#remotion-best-practices`，系统会自动安装并记录学习。",
                 "- 必须输出真实 mp4 文件，并在结果中附上路径/大小校验。",
                 "- 屏幕文案必须净化：禁止把 `\\n`/`\\t`/反引号/Markdown 符号按原样显示出来。",

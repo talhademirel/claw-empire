@@ -36,6 +36,36 @@ export function createMeetingPromptTools(deps: CreateMeetingPromptToolsDeps) {
     const recentCtx = getRecentConversationContext(agent.id, 8);
     const meetingLabel = opts.meetingType === "planned" ? "Planned Approval" : "Review Consensus";
     const compactTaskContext = compactTaskDescriptionForMeeting(opts.taskDescription);
+    const videoPlanningInvariant =
+      opts.workflowPackKey === "video_preprod"
+        ? lang === "ko"
+          ? [
+              "[Video Runtime Invariant]",
+              "- 영상 기획/실행은 최종 렌더러를 Remotion으로 고정합니다.",
+              "- 기획 항목은 Remotion 기준(컴포지션/씬/타임라인/트랜지션)으로 작성하세요.",
+              "- Python(moviepy/Pillow) 등 비-Remotion 렌더 파이프라인 제안은 금지합니다.",
+            ].join("\n")
+          : lang === "ja"
+            ? [
+                "[Video Runtime Invariant]",
+                "- 動画企画/実行の最終レンダラーは Remotion 固定です。",
+                "- 計画項目は Remotion 前提（コンポジション/シーン/タイムライン/トランジション）で作成してください。",
+                "- Python（moviepy/Pillow）など非Remotionレンダーパイプラインの提案は禁止です。",
+              ].join("\n")
+            : lang === "zh"
+              ? [
+                  "[Video Runtime Invariant]",
+                  "- 视频策划/执行的最终渲染器固定为 Remotion。",
+                  "- 计划项必须按 Remotion 产线编写（composition/scene/timeline/transition）。",
+                  "- 禁止提出 Python（moviepy/Pillow）等非 Remotion 渲染方案。",
+                ].join("\n")
+              : [
+                  "[Video Runtime Invariant]",
+                  "- Final video rendering is fixed to Remotion.",
+                  "- Plan action items around Remotion flow (composition/scene/timeline/transitions).",
+                  "- Do not propose Python renderers (moviepy/Pillow) or any non-Remotion pipeline.",
+                ].join("\n")
+        : "";
     return [
       `[CEO OFFICE ${meetingLabel}]`,
       `Task: ${opts.taskTitle}`,
@@ -44,6 +74,7 @@ export function createMeetingPromptTools(deps: CreateMeetingPromptToolsDeps) {
       `You are ${getAgentDisplayName(agent, lang)} (${deptName} ${role}).`,
       deptConstraint,
       localeInstruction(lang),
+      videoPlanningInvariant,
       "Output rules:",
       "- Return one natural chat message only (no JSON, no markdown).",
       "- Keep it concise: 1-3 sentences.",

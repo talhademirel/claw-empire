@@ -661,6 +661,7 @@ export function initializeWorkflowPartC(ctx: RuntimeContext): WorkflowOrchestrat
   const reviewFinalizeTools = createReviewFinalizeTools({
     db,
     nowMs,
+    logsDir,
     broadcast,
     appendTaskLog,
     getPreferredLanguage,

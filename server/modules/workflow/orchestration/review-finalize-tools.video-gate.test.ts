@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import { createReviewFinalizeTools } from "./review-finalize-tools.ts";
@@ -98,6 +101,93 @@ describe("review finalize video gate", () => {
       );
       expect(notifyCeo).toHaveBeenCalled();
     } finally {
+      db.close();
+    }
+  });
+
+  it("video artifact가 있어도 Remotion 증빙이 없으면 승인/머지를 차단한다", () => {
+    const db = createDb();
+    const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "climpire-review-gate-"));
+    const logsDir = fs.mkdtempSync(path.join(os.tmpdir(), "climpire-review-logs-"));
+    try {
+      const taskId = "task-video-remotion-missing";
+      const outputDir = path.join(projectRoot, "video_output");
+      fs.mkdirSync(outputDir, { recursive: true });
+      fs.writeFileSync(path.join(outputDir, "final.mp4"), "dummy-video", "utf8");
+
+      db.prepare(
+        `
+          INSERT INTO tasks (id, title, status, department_id, source_task_id, project_id, workflow_pack_key, project_path, created_at, updated_at)
+          VALUES (?, ?, 'review', 'planning', NULL, 'project-1', 'video_preprod', ?, 1, 1)
+        `,
+      ).run(taskId, "Video intro", projectRoot);
+
+      const appendTaskLog = vi.fn();
+      const notifyCeo = vi.fn();
+      const startReviewConsensusMeeting = vi.fn();
+      const mergeWorktree = vi.fn(() => ({ success: true, message: "merged" }));
+
+      const tools = createReviewFinalizeTools({
+        db,
+        nowMs: () => 1700000000000,
+        logsDir,
+        broadcast: vi.fn(),
+        appendTaskLog,
+        getPreferredLanguage: () => "ko",
+        pickL: (pool: any) => (Array.isArray(pool?.ko) ? pool.ko[0] : ""),
+        l: (ko: string[], en: string[], ja: string[], zh: string[]) => ({ ko, en, ja, zh }),
+        resolveLang: () => "ko",
+        getProjectReviewGateSnapshot: () => ({ activeReview: 1, activeTotal: 1, ready: true }),
+        projectReviewGateNotifiedAt: new Map<string, number>(),
+        notifyCeo,
+        taskWorktrees: new Map<string, { worktreePath: string; projectPath: string; branchName: string }>(),
+        mergeToDevAndCreatePR: vi.fn(() => ({ success: true, message: "pr created" })),
+        mergeWorktree,
+        cleanupWorktree: vi.fn(),
+        findTeamLeader: vi.fn(() => null),
+        getAgentDisplayName: vi.fn(() => "팀장"),
+        setTaskCreationAuditCompletion: vi.fn(),
+        endTaskExecutionSession: vi.fn(),
+        notifyTaskStatus: vi.fn(),
+        refreshCliUsageData: vi.fn(async () => ({})),
+        shouldDeferTaskReportUntilPlanningArchive: vi.fn(() => false),
+        emitTaskReportEvent: vi.fn(),
+        formatTaskSubtaskProgressSummary: vi.fn(() => ""),
+        reviewRoundState: new Map<string, number>(),
+        reviewInFlight: new Set<string>(),
+        archivePlanningConsolidatedReport: vi.fn(async () => undefined),
+        crossDeptNextCallbacks: new Map<string, () => void>(),
+        recoverCrossDeptQueueAfterMissingCallback: vi.fn(),
+        subtaskDelegationCallbacks: new Map<string, () => void>(),
+        startReviewConsensusMeeting,
+      } as any);
+
+      tools.finishReview(taskId, "Video intro", {
+        bypassProjectDecisionGate: true,
+        trigger: "test",
+      });
+
+      const updated = db.prepare("SELECT status FROM tasks WHERE id = ?").get(taskId) as { status: string };
+      expect(updated.status).toBe("review");
+      expect(startReviewConsensusMeeting).not.toHaveBeenCalled();
+      expect(mergeWorktree).not.toHaveBeenCalled();
+      expect(appendTaskLog).toHaveBeenCalledWith(
+        taskId,
+        "system",
+        expect.stringContaining("remotion evidence missing/invalid"),
+      );
+      expect(notifyCeo).toHaveBeenCalled();
+    } finally {
+      try {
+        fs.rmSync(projectRoot, { recursive: true, force: true });
+      } catch {
+        // best effort cleanup
+      }
+      try {
+        fs.rmSync(logsDir, { recursive: true, force: true });
+      } catch {
+        // best effort cleanup
+      }
       db.close();
     }
   });
