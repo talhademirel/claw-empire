@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.4-blue" alt="Releases" />
+  <img src="https://img.shields.io/badge/version-2.0.0-blue" alt="Releases" />
   <a href="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml"><img src="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js 22+" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-orange" alt="License" />
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="#クイックスタート">クイックスタート</a> &middot;
   <a href="#ai-installation-guide">AIインストール</a> &middot;
-  <a href="docs/releases/v1.2.4.md">リリースノート</a> &middot;
+  <a href="docs/releases/v2.0.0.md">リリースノート</a> &middot;
   <a href="#openclaw-integration">OpenClaw連携</a> &middot;
   <a href="#direct-messenger-without-openclaw">直接メッセンジャー</a> &middot;
   <a href="#dollar-command-logic">$ コマンド</a> &middot;
@@ -68,7 +68,7 @@ Claw-Empireは **CLI**、**OAuth**、**直接APIキー** で接続されたAIコ
 
 ---
 
-## 最新リリース (v1.2.4)
+## 最新リリース (v2.0.0)
 
 - **ワークフローパック基盤を導入** - `development` / `report` / `web_research_report` / `novel` / `video_preprod` / `roleplay` を標準パックとして追加し、パック対応オーケストレーションを実装しました。
 - **オフィスパック運用を強化** - パック選択をヘッダーに統合し、開発パック以外はパックごとの独立プロファイル（エージェント/部署/テーマ）で管理できるようにしました。
@@ -83,11 +83,11 @@ Claw-Empireは **CLI**、**OAuth**、**直接APIキー** で接続されたAIコ
 - **レポート出力ポリシー強化 (HTML + PPTX)** - レポートオフィスの出力を HTML+PPTX 同時生成に統一し、`python-pptx` は PPT Team 不可/ハード失敗時のみフォールバック許可にしました。
 - **既存ランタイム安定化 Fix** - worktree ブランチ競合復旧、Claude `--no-tools` 引数保持、YOLO/WebSocket リトライ安定化を反映しました。
 
-- 詳細: [`docs/releases/v1.2.4.md`](docs/releases/v1.2.4.md)
+- 詳細: [`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md)
 - APIドキュメント: [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json)
 - セキュリティポリシー: [`SECURITY.md`](SECURITY.md)
 
-## オフィスパックプロファイル (v1.2.4)
+## オフィスパックプロファイル (v2.0.0)
 
 各オフィスパックは、協業構造・命名シード・ワークフロー特性が異なるプロファイルとして動作します。
 

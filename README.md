@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.4-blue" alt="Releases" />
+  <img src="https://img.shields.io/badge/version-2.0.0-blue" alt="Releases" />
   <a href="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml"><img src="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js 22+" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-orange" alt="License" />
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="#quick-start">Quick Start</a> &middot;
   <a href="#ai-installation-guide">AI Install Guide</a> &middot;
-  <a href="docs/releases/v1.2.4.md">Release Notes</a> &middot;
+  <a href="docs/releases/v2.0.0.md">Release Notes</a> &middot;
   <a href="#openclaw-integration">OpenClaw</a> &middot;
   <a href="#direct-messenger-without-openclaw">Direct Messenger</a> &middot;
   <a href="#dollar-command-logic">$ Command</a> &middot;
@@ -68,7 +68,7 @@ Claw-Empire transforms your AI coding assistants — connected via **CLI**, **OA
 
 ---
 
-## Latest Release (v1.2.4)
+## Latest Release (v2.0.0)
 
 - **Workflow Pack platform rollout** - Added pack-aware orchestration with built-in keys (`development`, `report`, `web_research_report`, `novel`, `video_preprod`, `roleplay`) and API surface for runtime pack metadata.
 - **Office Pack operations integrated** - Moved pack selector into the top header and enabled isolated per-pack office profiles (agents/departments/themes) for non-development packs.
@@ -83,11 +83,11 @@ Claw-Empire transforms your AI coding assistants — connected via **CLI**, **OA
 - **Report output policy upgrade (HTML + PPTX)** - Report office output policy now targets both HTML and PPTX; `python-pptx` fallback is restricted to PPT Team unavailable/hard-fail cases.
 - **Core runtime fix bundle on existing flows** - Hardened branch-collision worktree recovery, preserved Claude `--no-tools` argv semantics, and stabilized YOLO/WebSocket retry behavior.
 
-- Full notes: [`docs/releases/v1.2.4.md`](docs/releases/v1.2.4.md)
+- Full notes: [`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md)
 - API docs: [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json)
 - Security policy: [`SECURITY.md`](SECURITY.md)
 
-## Office Pack Profiles (v1.2.4)
+## Office Pack Profiles (v2.0.0)
 
 Each office pack applies a different collaboration topology, naming seed, and workflow bias.
 

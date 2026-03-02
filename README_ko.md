@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.4-blue" alt="Releases" />
+  <img src="https://img.shields.io/badge/version-2.0.0-blue" alt="Releases" />
   <a href="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml"><img src="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js 22+" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-orange" alt="License" />
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="#빠른-시작">빠른 시작</a> &middot;
   <a href="#ai-installation-guide">AI 설치 가이드</a> &middot;
-  <a href="docs/releases/v1.2.4.md">릴리즈 노트</a> &middot;
+  <a href="docs/releases/v2.0.0.md">릴리즈 노트</a> &middot;
   <a href="#openclaw-integration">OpenClaw 연동</a> &middot;
   <a href="#direct-messenger-without-openclaw">직접 메신저</a> &middot;
   <a href="#dollar-command-logic">$ 명령 로직</a> &middot;
@@ -68,7 +68,7 @@ Claw-Empire는 **CLI**, **OAuth**, **직접 API 키** 방식으로 연결된 AI 
 
 ---
 
-## 최신 릴리즈 (v1.2.4)
+## 최신 릴리즈 (v2.0.0)
 
 - **워크플로우 팩 플랫폼 롤아웃** - `development`, `report`, `web_research_report`, `novel`, `video_preprod`, `roleplay` 팩 기반 오케스트레이션과 런타임 메타데이터 API를 추가했습니다.
 - **오피스 팩 운영 연동 강화** - 오피스 팩 선택기를 상단 헤더로 이동하고, 개발 팩 외에는 팩별 독립 프로필(직원/부서/테마)로 분리 운영하도록 개선했습니다.
@@ -83,11 +83,11 @@ Claw-Empire는 **CLI**, **OAuth**, **직접 API 키** 방식으로 연결된 AI 
 - **보고서 출력 정책 고도화(HTML + PPTX)** - 보고서 오피스 출력 정책을 HTML+PPTX 동시 산출로 정리했고, `python-pptx`는 PPT Team 불가/하드 실패 시에만 fallback으로 제한했습니다.
 - **기존 런타임 안정화 Fix 묶음** - worktree 브랜치 충돌 복구, Claude `--no-tools` 인자 보존, YOLO/WebSocket 재시도 안정화를 반영했습니다.
 
-- 상세 문서: [`docs/releases/v1.2.4.md`](docs/releases/v1.2.4.md)
+- 상세 문서: [`docs/releases/v2.0.0.md`](docs/releases/v2.0.0.md)
 - API 문서: [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json)
 - 보안 정책: [`SECURITY.md`](SECURITY.md)
 
-## 오피스팩 프로필 (v1.2.4)
+## 오피스팩 프로필 (v2.0.0)
 
 오피스팩마다 협업 구조, 이름 시드, 워크플로우 성향이 다르게 적용됩니다.
 
