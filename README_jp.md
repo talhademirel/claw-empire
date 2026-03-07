@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.1-blue" alt="Releases" />
+  <img src="https://img.shields.io/badge/version-2.0.2-blue" alt="Releases" />
   <a href="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml"><img src="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js 22+" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-orange" alt="License" />
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="#クイックスタート">クイックスタート</a> &middot;
   <a href="#ai-installation-guide">AIインストール</a> &middot;
-  <a href="docs/releases/v2.0.1.md">リリースノート</a> &middot;
+  <a href="docs/releases/v2.0.2.md">リリースノート</a> &middot;
   <a href="#openclaw-integration">OpenClaw連携</a> &middot;
   <a href="#direct-messenger-without-openclaw">直接メッセンジャー</a> &middot;
   <a href="#dollar-command-logic">$ コマンド</a> &middot;
@@ -68,20 +68,15 @@ Claw-Empireは **CLI**、**OAuth**、**直接APIキー** で接続されたAIコ
 
 ---
 
-## 最新リリース (v2.0.1)
+## 最新リリース (v2.0.2)
 
-- **オフィスパック部門優先順位を hydration 連動化** - `development` 以外のパックでは、hydration 前は pack profile（名称/アイコン）を優先表示し、hydration 完了後は DB メタデータを優先します。
-- **初回インストール体験を保護** - 新規インストール直後は DB が未 hydration でも pack profile を先に表示し、初期利用時に構成が欠けないようにしました。
-- **マージ規則の回帰テストを強化** - hydration 前後の優先切替と他パック seed エージェント非表示条件をテストで固定しました。
-- **Discord トークンによるチャネル自動検出** - Discord Bot トークンからギルド/テキストチャネルを取得する API を追加し、`Bot <token>` と生トークン入力の両方を受け付けます。
-- **設定モーダルの自動補完 UX** - Discord トークン入力時にチャネル候補を自動読み込みし、選択時に target ID と既定表示名を自動反映します。
-- **Discord 受信機を追加（双方向対応）** - ポーリング受信機を追加し、ユーザー発言を `/api/inbox` へ転送します。Bot 投稿はループ防止のため除外されます。
-- **受信状態の可視化を強化** - Discord 受信機ステータス API/設定パネルを追加し、有効状態・ポーリング数・最終エラーを UI で確認できます。
-- **Discord マルチトークン受信分離** - 同一チャネル ID を複数トークンで使う場合でも、トークンキー+チャネル単位でカーソル/経路を分離して混線を防ぎます。
-- **多言語ガイダンス/エラーメッセージ拡張** - Discord チャネル取得の読込中表示、0件案内、認証失敗、レート制限、一般失敗を KO/EN/JA/ZH で表示します。
-- **Discord 系回帰テストを拡充** - チャネル検出/認証失敗、受信転送、Bot メッセージ除外、マルチトークン source ヒント、UI 自動読み込みをテスト追加しました。
+- **OpenAPI 契約差分を CI で即時検出** - `test:ci` に `openapi:check` を組み込み、ルートとドキュメントの不整合を `main` 上で即座に失敗させます。
+- **運用 API の主要フローに E2E を追加** - タスク実行/停止/注入/再開、ターミナル/議事録取得、`/api/inbox` ディレクティブ webhook、プロジェクトパス補助、CLI 診断、API プロバイダー CRUD を CI で直接検証します。
+- **ドキュメント配信経路と公開 API 表面を検証** - `/api/docs`、swagger bootstrap、`/api/openapi.json`、contributor-facing なユーティリティ経路を CI で確認するようにしました。
+- **API ドキュメントを main の実ルート表面に同期** - `docs/api.md` と `docs/openapi.json` に task reports、project helpers、subtasks、agent spawn、announcements/directives、GitHub/OAuth/skills/sprites/update-auto 系を反映しました。
+- **E2E inbox 検証はローカル秘密情報に依存しません** - `/api/inbox` テストは開発者ローカル `.env` ではなく、非機密のテスト専用 secret を使います。
 
-- 詳細: [`docs/releases/v2.0.1.md`](docs/releases/v2.0.1.md)
+- 詳細: [`docs/releases/v2.0.2.md`](docs/releases/v2.0.2.md)
 - APIドキュメント: [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json)
 - セキュリティポリシー: [`SECURITY.md`](SECURITY.md)
 
