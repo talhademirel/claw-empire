@@ -2,13 +2,19 @@ services:
   claw-empire:
     build:
       context: .
-      dockerfile: Dockerfile.openclaw
+      dockerfile: Dockerfile
+      args:
+        APP_UID: 10001
+        APP_GID: 10001
     container_name: claw-empire
     restart: unless-stopped
     env_file:
       - .env.docker
+      - .env.docker.private
     ports:
       - "8790:8790"
     volumes:
       - ./data:/app/data
     working_dir: /app
+    security_opt:
+      - no-new-privileges:true
