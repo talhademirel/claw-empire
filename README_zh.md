@@ -29,6 +29,7 @@
   <a href="#截图">截图</a> &middot;
   <a href="#技术栈">技术栈</a> &middot;
   <a href="#cli-提供商配置">提供商</a> &middot;
+  <a href="#docker-部署快速入门">Docker 部署</a> &middot;
   <a href="#安全性">安全性</a>
 </p>
 
@@ -365,6 +366,58 @@ curl -X POST http://127.0.0.1:8790/api/inbox \
 - `/api/inbox` + `INBOX_WEBHOOK_SECRET` 仅用于 webhook/inbox 流程（含 OpenClaw bridge）。
 
 ---
+
+## Docker 部署（快速入门）
+
+本仓库已内置生产级 Docker 默认配置：
+
+- 以 **非 root 用户**（`app`，uid/gid `10001`）运行
+- 包含必需的 CLI/运行时工具（`git`、`bash`、`openssh-client`）
+- 使用标准文件名 `docker-compose.yml` + `Dockerfile`
+- 运行时数据持久化到 `./data`（已 gitignore）
+
+### 1) 准备环境文件
+
+```bash
+cp .env.example .env.docker
+```
+
+将敏感信息存入 `.env.docker.private`（仅本地使用）：
+
+```bash
+cat > .env.docker.private <<'EOF'
+# Claude Code 兼容端点
+ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic
+ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY
+EOF
+chmod 600 .env.docker.private
+```
+
+> `.env.docker*` 已被 `.env.*` 规则排除，不会被 git 提交。
+
+### 2) 启动
+
+```bash
+docker compose up -d --build
+```
+
+### 3) 验证
+
+```bash
+docker ps --filter name=claw-republic
+docker logs -f claw-republic
+```
+
+访问: `http://127.0.0.1:8790`
+
+### 可选: 发布镜像到 GHCR
+
+```bash
+# 需要具有 packages write 权限的 GitHub Token
+echo "<GITHUB_TOKEN_WITH_PACKAGES_WRITE>" | docker login ghcr.io -u <github-user> --password-stdin
+docker tag claw-republic-claw-republic:latest ghcr.io/<github-user>/claw-republic:latest
+docker push ghcr.io/<github-user>/claw-republic:latest
+```
 
 ## 快速开始
 
