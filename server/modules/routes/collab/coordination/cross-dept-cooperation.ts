@@ -502,7 +502,7 @@ export function createCrossDeptCooperationTools(deps: CrossDeptCooperationDeps) 
 
       // Actually spawn the CLI agent
       const execProvider = execAgent.cli_provider || "claude";
-      if (["claude", "codex", "gemini", "opencode"].includes(execProvider)) {
+      if (["claude", "codex", "gemini", "opencode", "kimi"].includes(execProvider)) {
         const crossTaskData = db.prepare("SELECT * FROM tasks WHERE id = ?").get(crossTaskId) as
           | {
               title: string;

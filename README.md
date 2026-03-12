@@ -6,22 +6,22 @@
 
 <p align="center">
   <strong>Command Your AI Agent Empire from the CEO Desk</strong><br>
-  A local-first AI agent office simulator that orchestrates <b>CLI</b>, <b>OAuth</b>, and <b>API-connected</b> providers (including <b>Claude Code</b>, <b>Codex CLI</b>, <b>Gemini CLI</b>, <b>OpenCode</b>, <b>GitHub Copilot</b>, and <b>Antigravity</b>) as a virtual company of autonomous agents.
+  A local-first AI agent office simulator that orchestrates <b>CLI</b>, <b>OAuth</b>, and <b>API-connected</b> providers (including <b>Claude Code</b>, <b>Codex CLI</b>, <b>Gemini CLI</b>, <b>OpenCode</b>, <b>Kimi Code</b>, <b>GitHub Copilot</b>, and <b>Antigravity</b>) as a virtual company of autonomous agents.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.3-blue" alt="Releases" />
+  <img src="https://img.shields.io/badge/version-2.0.4-blue" alt="Releases" />
   <a href="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml"><img src="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js 22+" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-orange" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="Platform" />
-  <img src="https://img.shields.io/badge/AI-Claude%20%7C%20Codex%20%7C%20Gemini%20%7C%20OpenCode%20%7C%20Copilot%20%7C%20Antigravity-purple" alt="AI Agents" />
+  <img src="https://img.shields.io/badge/AI-Claude%20%7C%20Codex%20%7C%20Gemini%20%7C%20OpenCode%20%7C%20Kimi%20%7C%20Copilot%20%7C%20Antigravity-purple" alt="AI Agents" />
 </p>
 
 <p align="center">
   <a href="#quick-start">Quick Start</a> &middot;
   <a href="#ai-installation-guide">AI Install Guide</a> &middot;
-  <a href="docs/releases/v2.0.3.md">Release Notes</a> &middot;
+  <a href="docs/releases/v2.0.4.md">Release Notes</a> &middot;
   <a href="#openclaw-integration">OpenClaw</a> &middot;
   <a href="#direct-messenger-without-openclaw">Direct Messenger</a> &middot;
   <a href="#dollar-command-logic">$ Command</a> &middot;
@@ -69,14 +69,15 @@ Claw-Empire transforms your AI coding assistants — connected via **CLI**, **OA
 
 ---
 
-## Latest Release (v2.0.3)
+## Latest Release (v2.0.4)
 
-- **Final branch verification is now visible before merge** - the Diff Modal now shows a verification verdict, compare ref, commit count, changed files, and uncommitted-file state from `GET /api/tasks/:id/verify-commit`.
-- **Completion reports retain merge-time verification evidence** - successful manual merge flow writes `Final branch verification: ...` logs, and the report popup surfaces them in the planning summary view.
-- **Report avatars stay on sprite faces even when the active roster changes** - report rows and popups now reconstruct a fallback agent from report payload data instead of degrading to emoji when the current `agents` list no longer contains the assignee.
-- **Selected salvage from PR #54 was added without importing its risky task-model changes** - this release includes the worktree verification API/UI, `scripts/cleanup-staff.mjs`, and optional `deploy/` self-host reference templates only.
+- **Docker deployment is now an officially documented path** - the repo now ships a production-oriented `Dockerfile`, `docker-compose.yml`, `.dockerignore`, and container-aware runtime path handling.
+- **Stale `working` agents recover automatically after interrupted runs** - lifecycle startup and interval sweeps now reset agents that are still marked `working` without a live `in_progress` task.
+- **Settings > API now supports official direct-API presets** - OpenCode Go and Bailian Coding Plan presets lock the expected Base URL, seed fallback models immediately, and keep refresh/retry behavior explicit.
+- **Kimi Code is now supported end to end** - Kimi is wired through CLI execution, provider labels, skills learn/unlearn flow, prompt-skill rendering, video-preprod bootstrap, and provider-aware schema/runtime checks.
+- **API model assignment now stays scoped to the development pack** - the assign flow no longer mixes unrelated office-pack departments into the default development assignment path.
 
-- Full notes: [`docs/releases/v2.0.3.md`](docs/releases/v2.0.3.md)
+- Full notes: [`docs/releases/v2.0.4.md`](docs/releases/v2.0.4.md)
 - API docs: [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json)
 - Security policy: [`SECURITY.md`](SECURITY.md)
 
@@ -119,7 +120,7 @@ Each office pack applies a different collaboration topology, naming seed, and wo
 </td>
 <td width="50%">
 
-**Multi-Provider CLI** — Configure Claude Code, Codex, Gemini CLI, OpenCode with model selection
+**Multi-Provider CLI** — Configure Claude Code, Codex, Gemini CLI, OpenCode, and Kimi Code with model selection
 
 <img src="Sample_Img/CLI.png" alt="CLI Tools Settings" width="100%" />
 </td>
@@ -202,8 +203,8 @@ Usage path: **Chat window > Report Request button**, then enter your request.
 | **Office Pack Profiles**       | Pack-scoped office profiles apply dedicated department topology, naming/theme presets, and isolated agent/department data per pack (except DB-backed development baseline) |
 | **Kanban Task Board**          | Full task lifecycle — Inbox, Planned, Collaborating, In Progress, Review, Done — with drag-and-drop                                                          |
 | **CEO Chat & Directives**      | Direct communication with team leaders; `$` directives support meeting choice plus project path/context routing (`project_path`, `project_context`)          |
-| **Multi-Provider Support**     | Claude Code, Codex CLI, Gemini CLI, OpenCode, Antigravity — all from one dashboard                                                                           |
-| **External API Providers**     | Connect agents to external LLM APIs (OpenAI, Anthropic, Google, Ollama, OpenRouter, Together, Groq, Cerebras, custom) via Settings > API tab                 |
+| **Multi-Provider Support**     | Claude Code, Codex CLI, Gemini CLI, OpenCode, Kimi Code, Antigravity — all from one dashboard                                                                |
+| **External API Providers**     | Connect agents to external LLM APIs (OpenAI, Anthropic, Google, Ollama, OpenRouter, Together, Groq, Cerebras, custom) via Settings > API tab, with official presets for OpenCode Go and Bailian Coding Plan |
 | **OAuth Integration**          | GitHub & Google OAuth with AES-encrypted token storage in local SQLite                                                                                       |
 | **Real-time WebSocket**        | Live status updates, activity feed, and agent state synchronization                                                                                          |
 | **Active Agent Control**       | Active-agent monitor with process/activity/idle metadata and direct kill action for stuck tasks                                                              |
@@ -774,6 +775,22 @@ Use only a plain executable + fixed args format (no shell/interpreter wrappers, 
 
 ## Provider Setup (CLI / OAuth / API)
 
+### Official API presets
+
+The **Settings > API** tab now includes four official direct-API presets:
+
+- `OpenCode Go (OpenAI)` -> `https://opencode.ai/zen/go/v1`
+- `OpenCode Go (Anthropic)` -> `https://opencode.ai/zen/go/v1`
+- `Bailian Coding Plan (OpenAI)` -> `https://coding-intl.dashscope.aliyuncs.com/v1`
+- `Bailian Coding Plan (Anthropic)` -> `https://coding-intl.dashscope.aliyuncs.com/apps/anthropic`
+
+Notes:
+
+- Bailian Coding Plan API keys must start with `sk-sp-`.
+- These presets seed fallback model lists immediately so agents can be assigned even when live `/models` discovery is unavailable or incomplete.
+- Direct API presets use the provider endpoint model IDs such as `glm-5`, `kimi-k2.5`, and `minimax-m2.5`. They do **not** use OpenCode CLI model IDs like `opencode-go/<model-id>`.
+- Bailian Coding Plan keys are intended for the interactive coding tool flow. Review the provider documentation before reusing those keys in other environments.
+
 Claw-Empire supports three provider paths:
 
 - **CLI tools** — install local coding CLIs and run tasks through local processes
@@ -788,6 +805,7 @@ For CLI mode, install at least one:
 | [Codex CLI](https://github.com/openai/codex)                  | `npm i -g @openai/codex`             | Set `OPENAI_API_KEY` in `.env` |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli)     | `npm i -g @google/gemini-cli`        | OAuth via Settings panel       |
 | [OpenCode](https://github.com/opencode-ai/opencode)           | `npm i -g opencode`                  | Provider-specific              |
+| [Kimi Code](https://github.com/MoonshotAI/kimi-cli)           | `uv tool install --python 3.13 kimi-cli` | `kimi auth login`          |
 
 Configure providers and models in the **Settings > CLI Tools** panel within the app.
 

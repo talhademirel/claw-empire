@@ -6,22 +6,22 @@
 
 <p align="center">
   <strong>CEO 데스크에서 AI 에이전트 제국을 지휘하세요</strong><br>
-  <b>CLI</b>, <b>OAuth</b>, <b>API 연동</b> 프로바이더(예: <b>Claude Code</b>, <b>Codex CLI</b>, <b>Gemini CLI</b>, <b>OpenCode</b>, <b>GitHub Copilot</b>, <b>Antigravity</b>)를 하나의 자율 에이전트 가상 회사로 운영하는 로컬 퍼스트 AI 에이전트 오피스 시뮬레이터
+  <b>CLI</b>, <b>OAuth</b>, <b>API 연동</b> 프로바이더(예: <b>Claude Code</b>, <b>Codex CLI</b>, <b>Gemini CLI</b>, <b>OpenCode</b>, <b>Kimi Code</b>, <b>GitHub Copilot</b>, <b>Antigravity</b>)를 하나의 자율 에이전트 가상 회사로 운영하는 로컬 퍼스트 AI 에이전트 오피스 시뮬레이터
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.3-blue" alt="Releases" />
+  <img src="https://img.shields.io/badge/version-2.0.4-blue" alt="Releases" />
   <a href="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml"><img src="https://github.com/GreenSheep01201/claw-empire/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22-brightgreen" alt="Node.js 22+" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-orange" alt="License" />
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="Platform" />
-  <img src="https://img.shields.io/badge/AI-Claude%20%7C%20Codex%20%7C%20Gemini%20%7C%20OpenCode%20%7C%20Copilot%20%7C%20Antigravity-purple" alt="AI Agents" />
+  <img src="https://img.shields.io/badge/AI-Claude%20%7C%20Codex%20%7C%20Gemini%20%7C%20OpenCode%20%7C%20Kimi%20%7C%20Copilot%20%7C%20Antigravity-purple" alt="AI Agents" />
 </p>
 
 <p align="center">
   <a href="#빠른-시작">빠른 시작</a> &middot;
   <a href="#ai-installation-guide">AI 설치 가이드</a> &middot;
-  <a href="docs/releases/v2.0.3.md">릴리즈 노트</a> &middot;
+  <a href="docs/releases/v2.0.4.md">릴리즈 노트</a> &middot;
   <a href="#openclaw-integration">OpenClaw 연동</a> &middot;
   <a href="#direct-messenger-without-openclaw">직접 메신저</a> &middot;
   <a href="#dollar-command-logic">$ 명령 로직</a> &middot;
@@ -69,14 +69,15 @@ Claw-Empire는 **CLI**, **OAuth**, **직접 API 키** 방식으로 연결된 AI 
 
 ---
 
-## 최신 릴리즈 (v2.0.3)
+## 최신 릴리즈 (v2.0.4)
 
-- **머지 전에 최종 브랜치 검증 결과를 바로 확인할 수 있습니다** - Diff Modal이 `GET /api/tasks/:id/verify-commit` 결과를 표시해 verdict, 비교 기준 ref, 커밋 수, 변경 파일, 미커밋 파일 상태를 함께 보여줍니다.
-- **작업 완료 보고서에 머지 시점 검증 근거가 남습니다** - 수동 머지 성공 시 `Final branch verification: ...` 로그가 기록되고, 보고서 팝업의 기획 요약 영역에서 그대로 확인할 수 있습니다.
-- **활성 에이전트 목록이 바뀌어도 보고서 얼굴은 sprite로 유지됩니다** - 현재 `agents` 배열에 담당자가 없어도 보고서 payload의 agent 정보로 fallback agent를 복원해 이모지로 내려가지 않습니다.
-- **PR #54에서는 안전한 범위만 선별 반영했습니다** - worktree verification API/UI, `scripts/cleanup-staff.mjs`, 선택적인 `deploy/` self-host 템플릿만 포함했고, task model 변경이나 admin/local-server 확장은 넣지 않았습니다.
+- **Docker 배포가 공식 경로로 들어왔습니다** - 프로덕션 지향 `Dockerfile`, `docker-compose.yml`, `.dockerignore`, 컨테이너 환경용 런타임 경로 정리가 포함됩니다.
+- **중단된 실행 뒤에 `working` 상태로 남은 에이전트가 자동 복구됩니다** - lifecycle startup/주기 스윕이 활성 `in_progress` 작업이 없는 `working` 에이전트를 `idle`로 되돌립니다.
+- **Settings > API에서 공식 direct API 프리셋을 바로 쓸 수 있습니다** - OpenCode Go와 Bailian Coding Plan 프리셋이 Base URL 고정, fallback 모델 시드, 명시적 refresh/retry 흐름을 제공합니다.
+- **Kimi Code가 end-to-end 프로바이더로 들어왔습니다** - CLI 실행, provider 라벨, 스킬 learn/unlearn, prompt skill 노출, video-preprod bootstrap, 기존 provider 제약 갱신까지 연결했습니다.
+- **API 모델 배정은 development 팩 스코프만 보도록 정리됐습니다** - 기본 개발 배정 흐름에서 다른 오피스팩 부서를 섞어 보여주지 않습니다.
 
-- 상세 문서: [`docs/releases/v2.0.3.md`](docs/releases/v2.0.3.md)
+- 상세 문서: [`docs/releases/v2.0.4.md`](docs/releases/v2.0.4.md)
 - API 문서: [`docs/api.md`](docs/api.md), [`docs/openapi.json`](docs/openapi.json)
 - 보안 정책: [`SECURITY.md`](SECURITY.md)
 
@@ -119,7 +120,7 @@ Claw-Empire는 **CLI**, **OAuth**, **직접 API 키** 방식으로 연결된 AI 
 </td>
 <td width="50%">
 
-**멀티 프로바이더 CLI** — Claude Code, Codex, Gemini CLI, OpenCode를 모델 선택과 함께 설정
+**멀티 프로바이더 CLI** — Claude Code, Codex, Gemini CLI, OpenCode, Kimi Code를 모델 선택과 함께 설정
 
 <img src="Sample_Img/CLI.png" alt="CLI Tools Settings" width="100%" />
 </td>
@@ -202,8 +203,8 @@ Claw-Empire는 **CLI**, **OAuth**, **직접 API 키** 방식으로 연결된 AI 
 | **오피스 팩 프로필**         | 팩별 전용 부서 토폴로지, 이름/테마 시드 프리셋, 직원·부서 데이터 분리 운영을 지원 (개발 팩은 기존 DB 기준선 유지)               |
 | **칸반 태스크 보드**         | Inbox, Planned, Collaborating, In Progress, Review, Done — 드래그 앤 드롭이 가능한 완전한 태스크 생애주기 관리                    |
 | **CEO 채팅 & 디렉티브**      | 팀 리더와의 직접 소통; `$` 디렉티브에서 회의 여부와 작업 경로/컨텍스트(`project_path`, `project_context`) 기반 지시 지원          |
-| **멀티 프로바이더 지원**     | Claude Code, Codex CLI, Gemini CLI, OpenCode, Antigravity — 하나의 대시보드에서 모두 관리                                         |
-| **외부 API 프로바이더**      | 설정 > API 탭에서 에이전트를 외부 LLM API(OpenAI, Anthropic, Google, Ollama, OpenRouter, Together, Groq, Cerebras, 커스텀)에 연결 |
+| **멀티 프로바이더 지원**     | Claude Code, Codex CLI, Gemini CLI, OpenCode, Kimi Code, Antigravity — 하나의 대시보드에서 모두 관리                             |
+| **외부 API 프로바이더**      | 설정 > API 탭에서 에이전트를 외부 LLM API(OpenAI, Anthropic, Google, Ollama, OpenRouter, Together, Groq, Cerebras, 커스텀)에 연결하고 OpenCode Go/Bailian 공식 프리셋도 바로 사용 가능 |
 | **OAuth 연동**               | 로컬 SQLite에 AES 암호화된 토큰 저장을 사용하는 GitHub & Google OAuth                                                             |
 | **실시간 WebSocket**         | 실시간 상태 업데이트, 활동 피드, 에이전트 상태 동기화                                                                             |
 | **활성 에이전트 제어**       | 작업 중 에이전트 상태(프로세스/활동/유휴) 확인 및 멈춘 태스크 강제 중지                                                           |
@@ -774,6 +775,22 @@ GitHub에 더 최신 릴리즈가 게시되면, Claw-Empire는 UI 상단에 pull
 
 ## 프로바이더 설정 (CLI / OAuth / API)
 
+### 공식 API 프리셋
+
+이제 **Settings > API** 탭에서 다음 4개의 공식 direct API 프리셋을 바로 추가할 수 있습니다.
+
+- `OpenCode Go (OpenAI)` -> `https://opencode.ai/zen/go/v1`
+- `OpenCode Go (Anthropic)` -> `https://opencode.ai/zen/go/v1`
+- `Bailian Coding Plan (OpenAI)` -> `https://coding-intl.dashscope.aliyuncs.com/v1`
+- `Bailian Coding Plan (Anthropic)` -> `https://coding-intl.dashscope.aliyuncs.com/apps/anthropic`
+
+메모:
+
+- Bailian Coding Plan API 키는 반드시 `sk-sp-` 접두사로 시작해야 합니다.
+- 이 프리셋들은 저장 즉시 fallback 모델 목록을 시드하므로, live `/models` 조회가 불완전하거나 실패해도 바로 에이전트에 배정할 수 있습니다.
+- direct API 프리셋은 `glm-5`, `kimi-k2.5`, `minimax-m2.5` 같은 실제 endpoint model id를 사용합니다. `opencode-go/<model-id>` 같은 OpenCode CLI 모델 ID를 쓰지 않습니다.
+- Bailian Coding Plan 키는 인터랙티브 코딩 도구 흐름용으로 안내되는 키입니다. 다른 환경에 재사용하기 전에 공식 문서를 확인하세요.
+
 Claw-Empire는 아래 3가지 방식의 프로바이더를 지원합니다:
 
 - **CLI 도구** — 로컬 CLI 설치 후 프로세스 기반으로 실행
@@ -788,6 +805,7 @@ CLI 모드로 사용하려면 최소 하나 이상 설치하세요:
 | [Codex CLI](https://github.com/openai/codex)                  | `npm i -g @openai/codex`             | `.env`에 `OPENAI_API_KEY` 설정 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli)     | `npm i -g @google/gemini-cli`        | 설정 패널에서 OAuth 인증       |
 | [OpenCode](https://github.com/opencode-ai/opencode)           | `npm i -g opencode`                  | 프로바이더별 설정              |
+| [Kimi Code](https://github.com/MoonshotAI/kimi-cli)           | `uv tool install --python 3.13 kimi-cli` | `kimi auth login`          |
 
 앱 내 **Settings > CLI Tools** 패널에서 프로바이더와 모델을 설정하세요.
 

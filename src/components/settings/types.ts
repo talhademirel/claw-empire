@@ -1,5 +1,12 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { ApiProvider, ApiProviderType, DeviceCodeStart, OAuthConnectProvider, OAuthStatus } from "../../api";
+import type {
+  ApiProvider,
+  ApiProviderOfficialPreset,
+  ApiProviderType,
+  DeviceCodeStart,
+  OAuthConnectProvider,
+  OAuthStatus,
+} from "../../api";
 import type { UiLanguage } from "../../i18n";
 import type {
   Agent,
@@ -39,6 +46,7 @@ export interface ApiFormState {
   type: ApiProviderType;
   base_url: string;
   api_key: string;
+  preset_key: string | null;
 }
 
 export type ApiTestResultMap = Record<string, { ok: boolean; msg: string }>;
@@ -95,10 +103,13 @@ export interface OAuthConnectCardProps {
 export interface ApiStateBundle {
   apiProviders: ApiProvider[];
   apiProvidersLoading: boolean;
+  apiOfficialPresets: Record<string, ApiProviderOfficialPreset>;
+  apiPresetsLoading: boolean;
   apiAddMode: boolean;
   apiEditingId: string | null;
   apiForm: ApiFormState;
   apiSaving: boolean;
+  apiSaveError: string | null;
   apiTesting: string | null;
   apiTestResult: ApiTestResultMap;
   apiModelsExpanded: Record<string, boolean>;
@@ -109,9 +120,11 @@ export interface ApiStateBundle {
   setApiAddMode: Dispatch<SetStateAction<boolean>>;
   setApiEditingId: Dispatch<SetStateAction<string | null>>;
   setApiForm: Dispatch<SetStateAction<ApiFormState>>;
+  setApiSaveError: Dispatch<SetStateAction<string | null>>;
   setApiModelsExpanded: Dispatch<SetStateAction<Record<string, boolean>>>;
   setApiAssignTarget: Dispatch<SetStateAction<ApiAssignTarget | null>>;
   loadApiProviders: () => Promise<void>;
+  loadApiPresets: () => Promise<void>;
   handleApiProviderSave: () => Promise<void>;
   handleApiProviderDelete: (id: string) => Promise<void>;
   handleApiProviderTest: (id: string) => Promise<void>;
