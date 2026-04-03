@@ -6,6 +6,7 @@ import { normalizeOfficeWorkflowPack } from "../app/office-workflow-pack";
 import { buildSpriteMap } from "./AgentAvatar";
 import AgentFormModal from "./agent-manager/AgentFormModal";
 import AgentsTab from "./agent-manager/AgentsTab";
+import AgentTeamsTab from "./agent-manager/AgentTeamsTab";
 import { BLANK, ICON_SPRITE_POOL } from "./agent-manager/constants";
 import DepartmentFormModal from "./agent-manager/DepartmentFormModal";
 import DepartmentsTab from "./agent-manager/DepartmentsTab";
@@ -28,7 +29,7 @@ export default function AgentManager({
   const isIsolatedPack = officePackKey !== "development";
   const useDbBackedPack = isIsolatedPack && dbBackedOfficePack;
 
-  const [subTab, setSubTab] = useState<"agents" | "departments">("agents");
+  const [subTab, setSubTab] = useState<"agents" | "departments" | "teams">("agents");
   const [search, setSearch] = useState("");
   const [deptTab, setDeptTab] = useState("all");
   const [modalAgent, setModalAgent] = useState<Agent | null>(null);
@@ -511,6 +512,7 @@ export default function AgentManager({
             icon: <StackedSpriteIcon sprites={randomIconSprites.tab} />,
           },
           { key: "departments" as const, label: tr("부서관리", "Departments"), icon: "🏢" },
+          { key: "teams" as const, label: tr("팀관리", "Teams"), icon: "👥" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -570,6 +572,10 @@ export default function AgentManager({
           onDrop={handleDeptDrop}
           onDragEnd={clearDeptDragState}
         />
+      )}
+
+      {subTab === "teams" && (
+        <AgentTeamsTab agents={agents} />
       )}
 
       {showModal && (

@@ -427,5 +427,24 @@ CREATE TABLE IF NOT EXISTS roadmap_features (
 
 CREATE INDEX IF NOT EXISTS idx_roadmap_features_project
   ON roadmap_features(project_id, phase, sort_order);
+
+CREATE TABLE IF NOT EXISTS agent_teams (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  source TEXT NOT NULL DEFAULT 'manual' CHECK(source IN ('manual','ai_generated')),
+  created_at INTEGER DEFAULT (unixepoch()*1000),
+  updated_at INTEGER DEFAULT (unixepoch()*1000)
+);
+
+CREATE TABLE IF NOT EXISTS agent_team_members (
+  team_id TEXT NOT NULL REFERENCES agent_teams(id) ON DELETE CASCADE,
+  agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+  added_at INTEGER DEFAULT (unixepoch()*1000),
+  PRIMARY KEY (team_id, agent_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_team_members_team ON agent_team_members(team_id);
+CREATE INDEX IF NOT EXISTS idx_agent_team_members_agent ON agent_team_members(agent_id);
 `);
 }

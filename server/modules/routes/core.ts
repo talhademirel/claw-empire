@@ -36,6 +36,7 @@ import { registerAutoTaskRoutes } from "./core/projects/auto-task.ts";
 import { registerIdeationRoutes } from "./core/projects/ideation.ts";
 import { registerRoadmapRoutes } from "./core/projects/roadmap.ts";
 import { registerTeamRoutes } from "./core/projects/team.ts";
+import { registerAgentTeamRoutes } from "./core/agent-teams.ts";
 import { registerTaskCrudRoutes } from "./core/tasks/crud.ts";
 import { registerTaskExecutionRoutes } from "./core/tasks/execution.ts";
 import { registerTaskSubtaskRoutes } from "./core/tasks/subtasks.ts";
@@ -489,6 +490,12 @@ export function registerRoutesPartA(ctx: RuntimeContext): Record<string, never> 
     app,
     db,
     broadcast,
+  });
+
+  registerAgentTeamRoutes({
+    app: __ctx.app,
+    db: __ctx.db,
+    broadcast: __ctx.broadcast,
   });
 
   return {};

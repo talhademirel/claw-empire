@@ -54,6 +54,13 @@ const runInTransaction = createRunInTransaction(db);
 const readSettingString = createReadSettingString(db);
 
 applyBaseSchema(db);
+// Migration: add team_id to projects if missing
+try {
+  const cols = db.prepare("PRAGMA table_info(projects)").all() as Array<{ name?: unknown }>;
+  if (!cols.some((c) => String(c.name ?? "") === "team_id")) {
+    db.exec("ALTER TABLE projects ADD COLUMN team_id TEXT REFERENCES agent_teams(id) ON DELETE SET NULL");
+  }
+} catch { /* ignore */ }
 const oauthRuntime = initializeOAuthRuntime({ db, nowMs, runInTransaction });
 applyTaskSchemaMigrations(db);
 applyDefaultSeeds(db);

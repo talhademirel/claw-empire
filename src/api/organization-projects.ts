@@ -880,3 +880,53 @@ export async function applyTeamRecommendation(
     clear_existing: clearExisting,
   }) as Promise<{ departments_created: number; agents_created: number }>;
 }
+
+// ── Agent Teams ─────────────────────────────────────────────────────
+export interface AgentTeam {
+  id: string;
+  name: string;
+  description: string | null;
+  source: "manual" | "ai_generated";
+  member_count: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface AgentTeamDetail extends AgentTeam {
+  members: import("../types").Agent[];
+}
+
+export async function listAgentTeams(): Promise<AgentTeam[]> {
+  const j = await request<{ ok: boolean; teams: AgentTeam[] }>("/api/agent-teams");
+  return j.teams;
+}
+
+export async function getAgentTeam(teamId: string): Promise<AgentTeamDetail> {
+  const j = await request<{ ok: boolean; team: AgentTeam; members: import("../types").Agent[] }>(`/api/agent-teams/${teamId}`);
+  return { ...j.team, members: j.members };
+}
+
+export async function createAgentTeam(data: { name: string; description?: string; agent_ids?: string[]; source?: "manual" | "ai_generated" }): Promise<AgentTeam> {
+  const j = await post("/api/agent-teams", data) as { ok: boolean; team: AgentTeam };
+  return j.team;
+}
+
+export async function updateAgentTeam(teamId: string, data: { name?: string; description?: string }): Promise<void> {
+  await patch(`/api/agent-teams/${teamId}`, data);
+}
+
+export async function deleteAgentTeam(teamId: string): Promise<void> {
+  await del(`/api/agent-teams/${teamId}`);
+}
+
+export async function addTeamMembers(teamId: string, agentIds: string[]): Promise<void> {
+  await post(`/api/agent-teams/${teamId}/members`, { agent_ids: agentIds });
+}
+
+export async function removeTeamMember(teamId: string, agentId: string): Promise<void> {
+  await del(`/api/agent-teams/${teamId}/members/${agentId}`);
+}
+
+export async function assignTeamToProject(projectId: string, teamId: string | null): Promise<void> {
+  await post(`/api/projects/${projectId}/assign-team`, { team_id: teamId });
+}
