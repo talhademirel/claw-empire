@@ -32,6 +32,10 @@ import { registerAgentRoutes } from "./core/agents/index.ts";
 import { registerDepartmentRoutes } from "./core/departments.ts";
 import { registerGitHubRoutes } from "./core/github-routes.ts";
 import { registerProjectRoutes } from "./core/projects.ts";
+import { registerAutoTaskRoutes } from "./core/projects/auto-task.ts";
+import { registerIdeationRoutes } from "./core/projects/ideation.ts";
+import { registerRoadmapRoutes } from "./core/projects/roadmap.ts";
+import { registerTeamRoutes } from "./core/projects/team.ts";
 import { registerTaskCrudRoutes } from "./core/tasks/crud.ts";
 import { registerTaskExecutionRoutes } from "./core/tasks/execution.ts";
 import { registerTaskSubtaskRoutes } from "./core/tasks/subtasks.ts";
@@ -451,6 +455,37 @@ export function registerRoutesPartA(ctx: RuntimeContext): Record<string, never> 
   });
 
   registerGitHubRoutes({
+    app,
+    db,
+    broadcast,
+  });
+
+  // AI-powered project analysis routes
+  registerAutoTaskRoutes({
+    app,
+    db,
+    broadcast,
+    appendTaskLog,
+    nowMs,
+  });
+
+  registerIdeationRoutes({
+    app,
+    db,
+    broadcast,
+    appendTaskLog,
+    nowMs,
+  });
+
+  registerRoadmapRoutes({
+    app,
+    db,
+    broadcast,
+    appendTaskLog,
+    nowMs,
+  });
+
+  registerTeamRoutes({
     app,
     db,
     broadcast,

@@ -1,4 +1,4 @@
-import { bootstrapSession, del, patch, post, request } from "./core";
+import { bootstrapSession, del, patch, post, request, withAuthHeaders } from "./core";
 
 import type {
   Agent,
@@ -481,4 +481,402 @@ export async function deleteProject(id: string): Promise<void> {
 
 export async function getProjectDetail(id: string): Promise<ProjectDetailResponse> {
   return request(`/api/projects/${id}`);
+}
+
+// ── Auto Task ──────────────────────────────────────────────────────
+export function analyzeProjectSSE(
+  projectId: string,
+  options: { mode: "quick" | "deep"; auto_assign: boolean; auto_run: boolean },
+  callbacks: {
+    onProgress?: (data: { phase: string; progress: number; task_count: number }) => void;
+    onAnalysisComplete?: (data: { summary: string; task_count: number; tasks: unknown[] }) => void;
+    onTasksCreated?: (data: { task_ids: string[]; count: number }) => void;
+    onDone?: () => void;
+    onError?: (error: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+  const baseUrl = "";
+
+  console.log(`[AutoTask] Starting analysis for project ${projectId}`, options);
+  fetch(`${baseUrl}/api/projects/${projectId}/auto-task`, {
+    method: "POST",
+    headers: Object.fromEntries(withAuthHeaders({ "Content-Type": "application/json" }, "POST")),
+    credentials: "same-origin",
+    body: JSON.stringify(options),
+    signal: controller.signal,
+  }).then(async (response) => {
+    console.log(`[AutoTask] Response status: ${response.status}`);
+    if (!response.ok || !response.body) {
+      const text = await response.text().catch(() => "");
+      console.error(`[AutoTask] Request failed: ${response.status} ${text}`);
+      callbacks.onError?.(`Request failed (${response.status}): ${text}`);
+      return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let eventName = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) eventName = line.slice(7).trim();
+        else if (line.startsWith("data: ") && eventName) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            console.log(`[AutoTask] SSE event: ${eventName}`, data);
+            if (eventName === "progress") callbacks.onProgress?.(data);
+            else if (eventName === "analysis_complete") callbacks.onAnalysisComplete?.(data);
+            else if (eventName === "tasks_created") callbacks.onTasksCreated?.(data);
+            else if (eventName === "done") callbacks.onDone?.();
+            else if (eventName === "error") callbacks.onError?.(data.error);
+          } catch { /* ignore */ }
+          eventName = "";
+        }
+      }
+    }
+    console.log(`[AutoTask] Stream ended`);
+  }).catch((err) => {
+    if (err.name !== "AbortError") {
+      console.error(`[AutoTask] Error:`, err);
+      callbacks.onError?.(String(err));
+    }
+  });
+
+  return controller;
+}
+
+// ── Ideation ──────────────────────────────────────────────────────
+export function runIdeationSSE(
+  projectId: string,
+  types?: string[],
+  callbacks?: {
+    onTypeProgress?: (data: { type: string; status: string; idea_count: number }) => void;
+    onDone?: (data: { total_ideas: number }) => void;
+    onError?: (error: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+  const baseUrl = "";
+
+  console.log(`[Ideation] Starting analysis for project ${projectId}`, types || "all");
+  fetch(`${baseUrl}/api/projects/${projectId}/ideation`, {
+    method: "POST",
+    headers: Object.fromEntries(withAuthHeaders({ "Content-Type": "application/json" }, "POST")),
+    credentials: "same-origin",
+    body: JSON.stringify({ types }),
+    signal: controller.signal,
+  }).then(async (response) => {
+    console.log(`[Ideation] Response status: ${response.status}`);
+    if (!response.ok || !response.body) {
+      const text = await response.text().catch(() => "");
+      console.error(`[Ideation] Request failed: ${response.status} ${text}`);
+      callbacks?.onError?.(`Request failed (${response.status}): ${text}`);
+      return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let eventName = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) eventName = line.slice(7).trim();
+        else if (line.startsWith("data: ") && eventName) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            console.log(`[Ideation] SSE event: ${eventName}`, data);
+            if (eventName === "type_progress") callbacks?.onTypeProgress?.(data);
+            else if (eventName === "done") callbacks?.onDone?.(data);
+            else if (eventName === "error") callbacks?.onError?.(data.error);
+          } catch { /* ignore */ }
+          eventName = "";
+        }
+      }
+    }
+    console.log(`[Ideation] Stream ended`);
+  }).catch((err) => {
+    if (err.name !== "AbortError") {
+      console.error(`[Ideation] Error:`, err);
+      callbacks?.onError?.(String(err));
+    }
+  });
+
+  return controller;
+}
+
+export interface IdeationIdea {
+  id: string;
+  project_id: string;
+  type: string;
+  title: string;
+  description: string;
+  rationale: string | null;
+  estimated_effort: "low" | "medium" | "high" | null;
+  affected_files: string | null;
+  implementation_approach: string | null;
+  converted_task_id: string | null;
+  status: "active" | "converted" | "dismissed";
+  created_at: number;
+}
+
+export async function getIdeationIdeas(
+  projectId: string,
+  filters?: { type?: string; status?: string },
+): Promise<IdeationIdea[]> {
+  const sp = new URLSearchParams();
+  if (filters?.type) sp.set("type", filters.type);
+  if (filters?.status) sp.set("status", filters.status);
+  const q = sp.toString();
+  const j = await request<{ ok: boolean; ideas: IdeationIdea[] }>(
+    `/api/projects/${projectId}/ideation${q ? `?${q}` : ""}`,
+  );
+  return j.ideas;
+}
+
+export async function convertIdeaToTask(projectId: string, ideaId: string): Promise<string> {
+  const j = (await post(`/api/projects/${projectId}/ideation/${ideaId}/convert`)) as { ok: boolean; task_id: string };
+  return j.task_id;
+}
+
+export async function dismissIdea(projectId: string, ideaId: string): Promise<void> {
+  await patch(`/api/projects/${projectId}/ideation/${ideaId}`, { status: "dismissed" });
+}
+
+// ── Roadmap ──────────────────────────────────────────────────────
+export function generateRoadmapSSE(
+  projectId: string,
+  callbacks?: {
+    onProgress?: (data: { phase: string; progress: number }) => void;
+    onDone?: (data: { discovery: unknown; feature_count: number }) => void;
+    onError?: (error: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+  const baseUrl = "";
+
+  console.log(`[Roadmap] Starting generation for project ${projectId}`);
+  fetch(`${baseUrl}/api/projects/${projectId}/roadmap/generate`, {
+    method: "POST",
+    headers: Object.fromEntries(withAuthHeaders({ "Content-Type": "application/json" }, "POST")),
+    credentials: "same-origin",
+    signal: controller.signal,
+  }).then(async (response) => {
+    console.log(`[Roadmap] Response status: ${response.status}`);
+    if (!response.ok || !response.body) {
+      const text = await response.text().catch(() => "");
+      console.error(`[Roadmap] Request failed: ${response.status} ${text}`);
+      callbacks?.onError?.(`Request failed (${response.status}): ${text}`);
+      return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let eventName = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) eventName = line.slice(7).trim();
+        else if (line.startsWith("data: ") && eventName) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            console.log(`[Roadmap] SSE event: ${eventName}`, data);
+            if (eventName === "progress") callbacks?.onProgress?.(data);
+            else if (eventName === "done") callbacks?.onDone?.(data);
+            else if (eventName === "error") callbacks?.onError?.(data.error);
+          } catch { /* ignore */ }
+          eventName = "";
+        }
+      }
+    }
+    console.log(`[Roadmap] Stream ended`);
+  }).catch((err) => {
+    if (err.name !== "AbortError") {
+      console.error(`[Roadmap] Error:`, err);
+      callbacks?.onError?.(String(err));
+    }
+  });
+
+  return controller;
+}
+
+export interface RoadmapFeature {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  phase: string;
+  status: string;
+  priority: number;
+  estimated_effort: string | null;
+  category: string | null;
+  dependencies: string | null;
+  converted_task_id: string | null;
+  sort_order: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface RoadmapDiscovery {
+  id: string;
+  project_id: string;
+  target_audience: string | null;
+  product_vision: string | null;
+  current_state: string | null;
+  raw_analysis: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export async function getRoadmap(projectId: string): Promise<{
+  discovery: RoadmapDiscovery | null;
+  features: RoadmapFeature[];
+}> {
+  const j = await request<{
+    ok: boolean;
+    discovery: RoadmapDiscovery | null;
+    features: RoadmapFeature[];
+  }>(`/api/projects/${projectId}/roadmap`);
+  return { discovery: j.discovery, features: j.features };
+}
+
+export async function updateRoadmapFeature(
+  projectId: string,
+  featureId: string,
+  data: { phase?: string; status?: string; priority?: number; sort_order?: number },
+): Promise<void> {
+  await patch(`/api/projects/${projectId}/roadmap/features/${featureId}`, data);
+}
+
+export async function convertFeatureToTask(projectId: string, featureId: string): Promise<string> {
+  const j = (await post(`/api/projects/${projectId}/roadmap/features/${featureId}/convert`)) as {
+    ok: boolean;
+    task_id: string;
+  };
+  return j.task_id;
+}
+
+export async function deleteRoadmapFeature(projectId: string, featureId: string): Promise<void> {
+  await del(`/api/projects/${projectId}/roadmap/features/${featureId}`);
+}
+
+// ── Team Discovery ──────────────────────────────────────────────────
+export interface TeamDepartment {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+}
+
+export interface TeamAgent {
+  name: string;
+  department_id: string;
+  role: string;
+  cli_provider: string;
+  avatar_emoji: string;
+  personality: string;
+}
+
+export interface TeamRecommendation {
+  team_summary: string;
+  departments: TeamDepartment[];
+  agents: TeamAgent[];
+}
+
+export function analyzeTeamSSE(
+  projectId: string,
+  callbacks?: {
+    onProgress?: (data: { phase: string; progress: number }) => void;
+    onRecommendation?: (data: TeamRecommendation) => void;
+    onDone?: () => void;
+    onError?: (error: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+  const baseUrl = "";
+
+  console.log(`[Team] Starting team analysis for project ${projectId}`);
+  fetch(`${baseUrl}/api/projects/${projectId}/team/analyze`, {
+    method: "POST",
+    headers: Object.fromEntries(withAuthHeaders({ "Content-Type": "application/json" }, "POST")),
+    credentials: "same-origin",
+    signal: controller.signal,
+  }).then(async (response) => {
+    console.log(`[Team] Response status: ${response.status}`);
+    if (!response.ok || !response.body) {
+      const text = await response.text().catch(() => "");
+      console.error(`[Team] Request failed: ${response.status} ${text}`);
+      callbacks?.onError?.(`Request failed (${response.status}): ${text}`);
+      return;
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let eventName = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) eventName = line.slice(7).trim();
+        else if (line.startsWith("data: ") && eventName) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            console.log(`[Team] SSE event: ${eventName}`, data);
+            if (eventName === "progress") callbacks?.onProgress?.(data);
+            else if (eventName === "recommendation") callbacks?.onRecommendation?.(data);
+            else if (eventName === "done") callbacks?.onDone?.();
+            else if (eventName === "error") callbacks?.onError?.(data.error);
+          } catch { /* ignore */ }
+          eventName = "";
+        }
+      }
+    }
+    console.log(`[Team] Stream ended`);
+  }).catch((err) => {
+    if (err.name !== "AbortError") {
+      console.error(`[Team] Error:`, err);
+      callbacks?.onError?.(String(err));
+    }
+  });
+
+  return controller;
+}
+
+export async function applyTeamRecommendation(
+  projectId: string,
+  recommendation: TeamRecommendation,
+  clearExisting: boolean,
+): Promise<{ departments_created: number; agents_created: number }> {
+  return post(`/api/projects/${projectId}/team/apply`, {
+    ...recommendation,
+    clear_existing: clearExisting,
+  }) as Promise<{ departments_created: number; agents_created: number }>;
 }

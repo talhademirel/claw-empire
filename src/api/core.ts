@@ -227,7 +227,7 @@ function isMutationMethod(method: string | undefined): boolean {
   return m === "POST" || m === "PUT" || m === "PATCH" || m === "DELETE";
 }
 
-function withAuthHeaders(init?: HeadersInit, method?: string): Headers {
+export function withAuthHeaders(init?: HeadersInit, method?: string): Headers {
   const headers = new Headers(init);
   const runtimeToken = readStoredApiAuthToken();
   if (runtimeToken && !headers.has("authorization")) {

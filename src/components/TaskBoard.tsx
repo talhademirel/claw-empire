@@ -3,6 +3,7 @@ import { bulkHideTasks } from "../api";
 import { useI18n } from "../i18n";
 import type { Agent, Department, SubTask, Task, WorkflowPackKey } from "../types";
 import ProjectManagerModal from "./ProjectManagerModal";
+import AutoTaskModal from "./auto-task/AutoTaskModal";
 import BulkHideModal from "./taskboard/BulkHideModal";
 import CreateTaskModal from "./taskboard/CreateTaskModal";
 import FilterBar from "./taskboard/FilterBar";
@@ -60,6 +61,8 @@ export function TaskBoard({
   const [showCreate, setShowCreate] = useState(false);
   const [showProjectManager, setShowProjectManager] = useState(false);
   const [showBulkHideModal, setShowBulkHideModal] = useState(false);
+  const [showAutoTask, setShowAutoTask] = useState(false);
+  const [autoTaskProject, setAutoTaskProject] = useState<{ id: string; name: string } | null>(null);
   const [filterDept, setFilterDept] = useState("");
   const [filterAgent, setFilterAgent] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -214,6 +217,30 @@ export function TaskBoard({
             🗂 {t({ ko: "프로젝트 관리", en: "Project Manager", ja: "プロジェクト管理", zh: "项目管理" })}
           </button>
           <button
+            onClick={async () => {
+              try {
+                const { getProjects } = await import("../api");
+                const res = await getProjects({ page: 1, page_size: 50 });
+                if (res.projects.length === 1) {
+                  setAutoTaskProject({ id: res.projects[0].id, name: res.projects[0].name });
+                  setShowAutoTask(true);
+                } else if (res.projects.length > 1) {
+                  const name = window.prompt(
+                    `Select project (${res.projects.map((p, i) => `${i + 1}. ${p.name}`).join(", ")})`,
+                    "1",
+                  );
+                  const idx = parseInt(name || "1", 10) - 1;
+                  const proj = res.projects[idx] || res.projects[0];
+                  setAutoTaskProject({ id: proj.id, name: proj.name });
+                  setShowAutoTask(true);
+                }
+              } catch { /* ignore */ }
+            }}
+            className="rounded-lg border border-purple-600 bg-purple-900/30 px-3 py-1.5 text-xs font-semibold text-purple-200 transition hover:bg-purple-900/50"
+          >
+            ✨ {t({ ko: "자동 생성", en: "Auto Generate", ja: "自動生成", zh: "自动生成" })}
+          </button>
+          <button
             onClick={() => setShowCreate(true)}
             className="rounded-lg bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white shadow transition hover:bg-blue-500 active:scale-95"
           >
@@ -303,6 +330,16 @@ export function TaskBoard({
 
       {showProjectManager && (
         <ProjectManagerModal agents={agents} departments={departments} onClose={() => setShowProjectManager(false)} />
+      )}
+
+      {showAutoTask && autoTaskProject && (
+        <AutoTaskModal
+          projectId={autoTaskProject.id}
+          projectName={autoTaskProject.name}
+          isOpen={showAutoTask}
+          onClose={() => { setShowAutoTask(false); setAutoTaskProject(null); }}
+          onTasksCreated={() => { setShowAutoTask(false); setAutoTaskProject(null); }}
+        />
       )}
 
       {showBulkHideModal && (

@@ -375,5 +375,57 @@ CREATE TABLE IF NOT EXISTS api_providers (
   created_at INTEGER DEFAULT (unixepoch()*1000),
   updated_at INTEGER DEFAULT (unixepoch()*1000)
 );
+
+CREATE TABLE IF NOT EXISTS ideation_ideas (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK(type IN (
+    'code_improvements','ui_ux_improvements','security_hardening',
+    'performance_optimizations','documentation_gaps','code_quality'
+  )),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  rationale TEXT,
+  estimated_effort TEXT CHECK(estimated_effort IN ('low','medium','high')),
+  affected_files TEXT,
+  implementation_approach TEXT,
+  converted_task_id TEXT REFERENCES tasks(id),
+  status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','converted','dismissed')),
+  created_at INTEGER DEFAULT (unixepoch()*1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ideation_ideas_project
+  ON ideation_ideas(project_id, type, status);
+
+CREATE TABLE IF NOT EXISTS roadmap_discovery (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
+  target_audience TEXT,
+  product_vision TEXT,
+  current_state TEXT,
+  raw_analysis TEXT,
+  created_at INTEGER DEFAULT (unixepoch()*1000),
+  updated_at INTEGER DEFAULT (unixepoch()*1000)
+);
+
+CREATE TABLE IF NOT EXISTS roadmap_features (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  phase TEXT NOT NULL DEFAULT 'backlog' CHECK(phase IN ('backlog','phase_1','phase_2','phase_3','phase_4')),
+  status TEXT NOT NULL DEFAULT 'backlog' CHECK(status IN ('backlog','planned','in_progress','completed')),
+  priority INTEGER NOT NULL DEFAULT 0,
+  estimated_effort TEXT CHECK(estimated_effort IN ('low','medium','high','very_high')),
+  category TEXT,
+  dependencies TEXT,
+  converted_task_id TEXT REFERENCES tasks(id),
+  sort_order INTEGER NOT NULL DEFAULT 99,
+  created_at INTEGER DEFAULT (unixepoch()*1000),
+  updated_at INTEGER DEFAULT (unixepoch()*1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_roadmap_features_project
+  ON roadmap_features(project_id, phase, sort_order);
 `);
 }

@@ -6,6 +6,7 @@ import {
   resolveVideoArtifactSpecForTask,
 } from "../packs/video-artifact.ts";
 import { evaluateRemotionOnlyGateFromLogFiles } from "../packs/video-render-engine-gate.ts";
+import { autoRunNextForAgent } from "../../ai/auto-assign-engine.ts";
 
 type CreateRunCompleteHandlerDeps = Record<string, any>;
 
@@ -297,6 +298,26 @@ export function createRunCompleteHandler(deps: CreateRunCompleteHandlerDeps) {
         | Record<string, unknown>
         | undefined;
       broadcast("agent_status", agent);
+
+      // Auto-run next task if enabled (autonomous loop)
+      if (finalExitCode === 0) {
+        try {
+          autoRunNextForAgent(db, task.assigned_agent_id, {
+            broadcast,
+            appendTaskLog,
+            nowMs: () => Date.now(),
+            runTask: async (nextTaskId: string) => {
+              // Trigger task execution via the same mechanism
+              const nextTask = db.prepare("SELECT * FROM tasks WHERE id = ?").get(nextTaskId) as any;
+              if (nextTask) {
+                appendTaskLog(nextTaskId, "auto-run", "Auto-started by autonomous loop");
+              }
+            },
+          });
+        } catch {
+          // Auto-run is optional; ignore failures
+        }
+      }
     }
 
     if (finalExitCode === 0 && task) {

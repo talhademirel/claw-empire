@@ -1,7 +1,22 @@
+import { useEffect, useRef, useState } from "react";
 import type { ProjectDecisionEventItem, ProjectReportHistoryItem, ProjectTaskHistoryItem } from "../../api";
+import {
+  analyzeProjectSSE,
+  analyzeTeamSSE,
+  applyTeamRecommendation,
+  type TeamRecommendation,
+} from "../../api/organization-projects";
 import type { Project } from "../../types";
 import type { GroupedProjectTaskCard, ProjectI18nTranslate } from "./types";
 import { fmtTime } from "./utils";
+
+const TEAM_PHASE_LOGS: Record<string, string> = {
+  collecting_context: "Scanning project files...",
+  analyzing: "Reading project structure...",
+  generating_team: "Asking Opus to build your team...",
+  parsing: "Parsing team recommendations...",
+  done: "Team ready!",
+};
 
 interface ProjectInsightsPanelProps {
   t: ProjectI18nTranslate;
@@ -26,6 +41,80 @@ export default function ProjectInsightsPanel({
   getDecisionEventLabel,
   handleOpenTaskDetail,
 }: ProjectInsightsPanelProps) {
+  const [autoTaskRunning, setAutoTaskRunning] = useState(false);
+  const [autoTaskResult, setAutoTaskResult] = useState<string | null>(null);
+  const [teamRunning, setTeamRunning] = useState(false);
+  const [teamLogs, setTeamLogs] = useState<string[]>([]);
+  const [teamRecommendation, setTeamRecommendation] = useState<TeamRecommendation | null>(null);
+  const [teamApplying, setTeamApplying] = useState(false);
+  const [teamApplyError, setTeamApplyError] = useState<string | null>(null);
+  const teamLogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (teamLogRef.current) {
+      teamLogRef.current.scrollTop = teamLogRef.current.scrollHeight;
+    }
+  }, [teamLogs]);
+
+  const handleBuildTeam = () => {
+    if (!selectedProject) return;
+    setTeamRunning(true);
+    setTeamLogs([]);
+    setTeamRecommendation(null);
+    setTeamApplyError(null);
+    analyzeTeamSSE(selectedProject.id, {
+      onProgress: (data) => {
+        const msg = TEAM_PHASE_LOGS[data.phase] || data.phase;
+        setTeamLogs((prev) => [...prev, `[${data.progress}%] ${msg}`]);
+      },
+      onRecommendation: (data) => {
+        setTeamRecommendation(data);
+        setTeamLogs((prev) => [
+          ...prev,
+          `[100%] ${data.departments.length} departments, ${data.agents.length} agents ready.`,
+        ]);
+      },
+      onDone: () => setTeamRunning(false),
+      onError: (err) => {
+        setTeamLogs((prev) => [...prev, `[ERR] ${err}`]);
+        setTeamRunning(false);
+      },
+    });
+  };
+
+  const handleApplyTeam = async (clearExisting: boolean) => {
+    if (!selectedProject || !teamRecommendation) return;
+    setTeamApplying(true);
+    setTeamApplyError(null);
+    try {
+      const result = await applyTeamRecommendation(selectedProject.id, teamRecommendation, clearExisting);
+      setTeamLogs((prev) => [
+        ...prev,
+        `[OK] ${result.departments_created} departments + ${result.agents_created} agents created.`,
+      ]);
+      setTeamRecommendation(null);
+    } catch (err) {
+      setTeamApplyError(`Apply failed: ${err}`);
+    } finally {
+      setTeamApplying(false);
+    }
+  };
+
+  const handleAutoTask = () => {
+    if (!selectedProject) return;
+    setAutoTaskRunning(true);
+    setAutoTaskResult(null);
+    analyzeProjectSSE(
+      selectedProject.id,
+      { mode: "quick", auto_assign: false, auto_run: false },
+      {
+        onTasksCreated: (data) => setAutoTaskResult(`${data.count} tasks created`),
+        onDone: () => setAutoTaskRunning(false),
+        onError: (err) => { setAutoTaskResult(`Error: ${err}`); setAutoTaskRunning(false); },
+      },
+    );
+  };
+
   return (
     <div className="min-w-0 space-y-4">
       <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-800/40 p-4">
@@ -79,6 +168,122 @@ export default function ProjectInsightsPanel({
           </div>
         )}
       </div>
+
+      {/* AI Actions */}
+      {selectedProject && !isCreating && (
+        <div className="min-w-0 rounded-xl border border-purple-800/50 bg-purple-900/10 p-4">
+          <h4 className="text-sm font-semibold text-purple-200">
+            ✨ {t({ ko: "AI 분석", en: "AI Analysis", ja: "AI分析", zh: "AI分析" })}
+          </h4>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={handleAutoTask}
+              disabled={autoTaskRunning}
+              className="rounded-lg border border-purple-600 bg-purple-900/40 px-3 py-1.5 text-[11px] font-medium text-purple-200 transition hover:bg-purple-900/60 disabled:opacity-50"
+            >
+              {autoTaskRunning ? "⏳ Analyzing..." : "🔍 Auto Task"}
+            </button>
+            <button
+              onClick={handleBuildTeam}
+              disabled={teamRunning}
+              className="rounded-lg border border-emerald-600 bg-emerald-900/40 px-3 py-1.5 text-[11px] font-medium text-emerald-200 transition hover:bg-emerald-900/60 disabled:opacity-50"
+            >
+              {teamRunning ? "⏳ Analyzing..." : "👥 Build Team"}
+            </button>
+          </div>
+          {autoTaskResult && (
+            <p className="mt-2 text-[11px] text-purple-300">{autoTaskResult}</p>
+          )}
+
+          {/* Terminal log */}
+          {teamLogs.length > 0 && (
+            <div
+              ref={teamLogRef}
+              className="mt-3 max-h-28 overflow-y-auto rounded-md bg-black/70 p-2.5 font-mono text-[10px] leading-relaxed"
+            >
+              {teamLogs.map((line, i) => (
+                <p
+                  key={i}
+                  className={
+                    line.startsWith("[ERR]")
+                      ? "text-red-400"
+                      : line.startsWith("[OK]")
+                        ? "text-emerald-400"
+                        : line.startsWith("[100%]")
+                          ? "text-emerald-300"
+                          : "text-green-500"
+                  }
+                >
+                  <span className="text-slate-600 mr-1">$</span>{line}
+                </p>
+              ))}
+              {teamRunning && (
+                <p className="text-green-500 animate-pulse">
+                  <span className="text-slate-600 mr-1">$</span>▋
+                </p>
+              )}
+            </div>
+          )}
+
+          {teamApplyError && (
+            <p className="mt-2 text-[11px] text-red-400">{teamApplyError}</p>
+          )}
+
+          {/* Team Recommendation Preview */}
+          {teamRecommendation && (
+            <div className="mt-3 space-y-2 rounded-lg border border-emerald-700/50 bg-emerald-950/30 p-3">
+              <p className="text-[11px] text-emerald-200">{teamRecommendation.team_summary}</p>
+              <div className="space-y-1">
+                {teamRecommendation.departments.map((d) => (
+                  <div key={d.id} className="flex items-center gap-2 text-[11px]">
+                    <span>{d.icon}</span>
+                    <span className="font-medium text-slate-200">{d.name}</span>
+                    <span className="text-slate-500">—</span>
+                    <span className="text-slate-400">{d.description}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1">
+                {teamRecommendation.agents.map((a, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[11px]">
+                    <span>{a.avatar_emoji}</span>
+                    <span className="font-medium text-slate-200">{a.name}</span>
+                    <span className="rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400">{a.role}</span>
+                    <span className="rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-blue-300">{a.cli_provider}</span>
+                    <span className="text-slate-500">{a.department_id}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => handleApplyTeam(false)}
+                  disabled={teamApplying}
+                  className="rounded-lg bg-emerald-700 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-emerald-600 disabled:opacity-50"
+                >
+                  {teamApplying ? "Applying..." : "➕ Add to Existing"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (window.confirm("This will remove ALL existing departments and agents. Continue?")) {
+                      handleApplyTeam(true);
+                    }
+                  }}
+                  disabled={teamApplying}
+                  className="rounded-lg border border-red-700 bg-red-900/30 px-3 py-1.5 text-[11px] font-medium text-red-300 transition hover:bg-red-900/50 disabled:opacity-50"
+                >
+                  🔄 Replace All
+                </button>
+                <button
+                  onClick={() => setTeamRecommendation(null)}
+                  className="rounded-lg border border-slate-600 px-3 py-1.5 text-[11px] text-slate-400 transition hover:bg-slate-800"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="min-w-0 rounded-xl border border-slate-700 bg-slate-800/40 p-4">
         <h4 className="text-sm font-semibold text-white">
