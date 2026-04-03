@@ -1,5 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, Trash2, Edit2, Users, Check, X, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Users, Check, X, ChevronDown, ChevronUp, Wand2, Layers } from "lucide-react";
+
+const PACK_OPTIONS = [
+  { key: "development",        label: "DEV · Development Office" },
+  { key: "report",             label: "RPT · Report Office" },
+  { key: "web_research_report",label: "WEB · Web Research Office" },
+  { key: "novel",              label: "NOV · Novel Studio" },
+  { key: "video_preprod",      label: "VID · Video Pre-production" },
+  { key: "roleplay",           label: "RPG · Roleplay Studio" },
+] as const;
+
+function PackBadge({ packKey }: { packKey: string }) {
+  const opt = PACK_OPTIONS.find((p) => p.key === packKey);
+  const short = opt?.label.split(" · ")[0] ?? packKey.toUpperCase().slice(0, 3);
+  return (
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-600 shrink-0 font-mono">
+      {short}
+    </span>
+  );
+}
 import type { Agent } from "../../types";
 import { getProjects } from "../../api";
 import type { Project } from "../../types";
@@ -41,6 +60,7 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
   const [showCreate, setShowCreate] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createDesc, setCreateDesc] = useState("");
+  const [createPackKey, setCreatePackKey] = useState("development");
   const [creating, setCreating] = useState(false);
 
   // Edit / delete
@@ -61,6 +81,7 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
   const [buildLogs, setBuildLogs] = useState<string[]>([]);
   const [buildRecommendation, setBuildRecommendation] = useState<TeamRecommendation | null>(null);
   const [saveTeamName, setSaveTeamName] = useState("");
+  const [savePackKey, setSavePackKey] = useState("development");
   const [savingTeam, setSavingTeam] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const buildAbortRef = useRef<AbortController | null>(null);
@@ -101,8 +122,8 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
     if (!createName.trim()) return;
     setCreating(true);
     try {
-      await createAgentTeam({ name: createName.trim(), description: createDesc.trim() || undefined });
-      setCreateName(""); setCreateDesc(""); setShowCreate(false);
+      await createAgentTeam({ name: createName.trim(), description: createDesc.trim() || undefined, pack_key: createPackKey });
+      setCreateName(""); setCreateDesc(""); setCreatePackKey("development"); setShowCreate(false);
       await fetchTeams();
     } finally { setCreating(false); }
   };
@@ -164,6 +185,7 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
         setBuildRecommendation(data);
         const project = projects.find((p) => p.id === selectedProjectId);
         setSaveTeamName(project ? `${project.name} Team` : "New Team");
+        setSavePackKey("development");
         setBuildLogs((prev) => [...prev, `[100%] ${data.departments.length} depts, ${data.agents.length} agents ready.`]);
       },
       onDone: () => setBuildRunning(false),
@@ -185,6 +207,7 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
         name: saveTeamName.trim(),
         description: buildRecommendation.team_summary,
         source: "ai_generated",
+        pack_key: savePackKey,
       });
 
       // 3. Find newly created agents by name match and add to team
@@ -326,6 +349,18 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
                   placeholder="Team name..."
                   className="w-full bg-gray-800 border border-gray-600 rounded px-2.5 py-1.5 text-sm text-gray-100 placeholder-gray-500 outline-none focus:border-emerald-500 mb-2"
                 />
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  <select
+                    value={savePackKey}
+                    onChange={(e) => setSavePackKey(e.target.value)}
+                    className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-emerald-500"
+                  >
+                    {PACK_OPTIONS.map((p) => (
+                      <option key={p.key} value={p.key}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex gap-2 flex-wrap">
                   <button
                     type="button"
@@ -380,6 +415,18 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
             placeholder="Description (optional)"
             className="w-full bg-gray-800 border border-gray-600 rounded px-2.5 py-1.5 text-sm text-gray-100 placeholder-gray-500 outline-none focus:border-blue-500"
           />
+          <div className="flex items-center gap-2">
+            <Layers className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+            <select
+              value={createPackKey}
+              onChange={(e) => setCreatePackKey(e.target.value)}
+              className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500"
+            >
+              {PACK_OPTIONS.map((p) => (
+                <option key={p.key} value={p.key}>{p.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
@@ -438,6 +485,7 @@ export default function AgentTeamsTab({ agents, onAgentsChange }: AgentTeamsTabP
               <span className="text-xs text-gray-500 shrink-0 flex items-center gap-1">
                 <Users className="w-3 h-3" />{team.member_count}
               </span>
+              <PackBadge packKey={team.pack_key ?? "development"} />
               {team.source === "ai_generated" && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-800 shrink-0">AI</span>
               )}

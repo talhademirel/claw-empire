@@ -61,6 +61,13 @@ try {
     db.exec("ALTER TABLE projects ADD COLUMN team_id TEXT REFERENCES agent_teams(id) ON DELETE SET NULL");
   }
 } catch { /* ignore */ }
+// Migration: add pack_key to agent_teams if missing
+try {
+  const cols = db.prepare("PRAGMA table_info(agent_teams)").all() as Array<{ name?: unknown }>;
+  if (!cols.some((c) => String(c.name ?? "") === "pack_key")) {
+    db.exec("ALTER TABLE agent_teams ADD COLUMN pack_key TEXT NOT NULL DEFAULT 'development'");
+  }
+} catch { /* ignore */ }
 const oauthRuntime = initializeOAuthRuntime({ db, nowMs, runInTransaction });
 applyTaskSchemaMigrations(db);
 applyDefaultSeeds(db);

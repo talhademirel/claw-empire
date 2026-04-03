@@ -887,6 +887,7 @@ export interface AgentTeam {
   name: string;
   description: string | null;
   source: "manual" | "ai_generated";
+  pack_key: string;
   member_count: number;
   created_at: number;
   updated_at: number;
@@ -906,12 +907,12 @@ export async function getAgentTeam(teamId: string): Promise<AgentTeamDetail> {
   return { ...j.team, members: j.members };
 }
 
-export async function createAgentTeam(data: { name: string; description?: string; agent_ids?: string[]; source?: "manual" | "ai_generated" }): Promise<AgentTeam> {
+export async function createAgentTeam(data: { name: string; description?: string; agent_ids?: string[]; source?: "manual" | "ai_generated"; pack_key?: string }): Promise<AgentTeam> {
   const j = await post("/api/agent-teams", data) as { ok: boolean; team: AgentTeam };
   return j.team;
 }
 
-export async function updateAgentTeam(teamId: string, data: { name?: string; description?: string }): Promise<void> {
+export async function updateAgentTeam(teamId: string, data: { name?: string; description?: string; pack_key?: string }): Promise<void> {
   await patch(`/api/agent-teams/${teamId}`, data);
 }
 
